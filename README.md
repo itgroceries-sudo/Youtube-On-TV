@@ -6,7 +6,7 @@
 ![Version](https://img.shields.io/badge/version-3.0.0-red?style=for-the-badge&logo=youtube)
 ![Platform](https://img.shields.io/badge/platform-Windows_10%2F11-blue?style=for-the-badge&logo=windows)
 ![Tech](https://img.shields.io/badge/Powered_By-PowerShell_%2B_Batch-black?style=for-the-badge&logo=powershell)
-![Browser](https://img.shields.io/badge/Support-Brave_%7C_Chrome-orange?style=for-the-badge&logo=google-chrome)
+![Browser](https://img.shields.io/badge/Support-Brave_%7C_Chrome_%7C_Edge-0078D7?style=for-the-badge&logo=microsoft-edge)
 
 ---
 
@@ -37,7 +37,7 @@
     1. **Youtube On TV:** สำหรับดูหนัง ฟังเพลง แบบเต็มจอ (TV Mode)
     2. **YouTube Desktop:** สำหรับการใช้งานทั่วไป (ผ่าน Browser Apps ปกติ)
 * **Zero-Config:** ไม่ต้องตั้งค่า User-Agent หรือ Shortcut เองให้ยุ่งยาก สคริปต์จัดการให้หมด
-* **Smart Detection:** ตรวจจับอัตโนมัติว่าเครื่องคุณใช้ **Brave** หรือ **Chrome**
+* **Smart Detection:** ตรวจจับอัตโนมัติรองรับทั้ง **Brave**, **Chrome** และ **Microsoft Edge**
 * **Icon Preservation:** 🛡️ ระบบรักษาไอคอนเดิมของ YouTube ไว้ ไม่ให้กลายเป็นรูปกระดาษเปล่า
 * **Ghost Buster:** 👻 มีระบบ Cleanup ช่วยลบไฟล์ Shortcut ขยะที่ Browser ชอบสร้างขึ้นมาซ้ำซ้อน
 
