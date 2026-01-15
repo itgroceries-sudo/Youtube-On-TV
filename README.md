@@ -82,8 +82,14 @@
 เปิด **PowerShell** หรือ Terminal แล้ววางคำสั่งนี้:
 
 ```powershell
-iex(irm bit.ly/YToTV
+iex(irm bit.ly/YToTV)
 ```
+
+หรือ
+```Terminal
+irm bit.ly/YToTV | iex
+```
+
 แล้วกด **Enter**
 
 ## 📝 ขั้นตอนการใช้งาน (Step-by-Step)
