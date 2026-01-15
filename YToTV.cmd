@@ -1,14 +1,13 @@
-<# :
+<# ::
 @echo off
 :: ---------------------------------------------------------
-:: [WRAPPER] Batch Launcher -> Hides Console immediately
+:: [WRAPPER] Batch Launcher
 :: ---------------------------------------------------------
 setlocal
 cd /d "%~dp0"
-:: Launch PowerShell with Hidden WindowStyle
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "iex ((Get-Content '%~f0') -join \"`n\")"
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Get-Content -LiteralPath '%~f0' | Out-String | Invoke-Expression"
 goto :EOF
-: #>
+:: #>
 
 # ---------------------------------------------------------
 # [PAYLOAD] PowerShell GUI Script
@@ -27,17 +26,29 @@ $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
 $IconUrl = "https://itgroceries.blogspot.com/favicon.ico"
 $IconTempPath = "$env:TEMP\itg_gui_icon.ico"
 
-# --- DETECT BROWSER ---
+# --- DETECT BROWSER (FIXED LOGIC) ---
 $BravePath = "$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe"
 $ChromePath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
-$EdgePath = "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe"
-if (-not (Test-Path $EdgePath)) { $EdgePath = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe" }
+$EdgePathX86 = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+$EdgePathX64 = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+
 $SelectedBrowser = $null
 $BrowserName = "Unknown"
 
-if (Test-Path $BravePath) { $SelectedBrowser = $BravePath; $BrowserName = "Brave Browser" } 
-elseif (Test-Path $ChromePath) { $SelectedBrowser = $ChromePath; $BrowserName = "Google Chrome" }
-elseif (Test-Path $EdgePath) { $SelectedBrowser = $EdgePath; $BrowserName = "Microsoft Edge" } #
+# : Brave -> Chrome -> Edge
+if (Test-Path $BravePath) { 
+    $SelectedBrowser = $BravePath
+    $BrowserName = "Brave Browser" 
+} elseif (Test-Path $ChromePath) { 
+    $SelectedBrowser = $ChromePath
+    $BrowserName = "Google Chrome" 
+} elseif (Test-Path $EdgePathX64) { 
+    $SelectedBrowser = $EdgePathX64
+    $BrowserName = "Microsoft Edge" 
+} elseif (Test-Path $EdgePathX86) { 
+    $SelectedBrowser = $EdgePathX86
+    $BrowserName = "Microsoft Edge" 
+}
 
 # --- FORM SETUP ---
 $form = New-Object System.Windows.Forms.Form
@@ -82,7 +93,7 @@ $timer = New-Object System.Windows.Forms.Timer; $timer.Interval = 1500
 # --- MAIN LOGIC ---
 $btnAction.Add_Click({
     if ($btnAction.Text -eq "Close") { $form.Close(); return }
-    if ($null -eq $SelectedBrowser) { [System.Windows.Forms.MessageBox]::Show("No compatible browser found!", "Error", "OK", "Error"); return }
+    if ($null -eq $SelectedBrowser) { [System.Windows.Forms.MessageBox]::Show("No compatible browser found!`nPlease install Brave, Chrome, or Edge.", "Error", "OK", "Error"); return }
 
     Start-Process -FilePath $SelectedBrowser -ArgumentList "https://www.youtube.com"
     
