@@ -30,11 +30,14 @@ $IconTempPath = "$env:TEMP\itg_gui_icon.ico"
 # --- DETECT BROWSER ---
 $BravePath = "$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe"
 $ChromePath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+$EdgePath = "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe"
+if (-not (Test-Path $EdgePath)) { $EdgePath = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe" }
 $SelectedBrowser = $null
 $BrowserName = "Unknown"
 
 if (Test-Path $BravePath) { $SelectedBrowser = $BravePath; $BrowserName = "Brave Browser" } 
 elseif (Test-Path $ChromePath) { $SelectedBrowser = $ChromePath; $BrowserName = "Google Chrome" }
+elseif (Test-Path $EdgePath) { $SelectedBrowser = $EdgePath; $BrowserName = "Microsoft Edge" } #
 
 # --- FORM SETUP ---
 $form = New-Object System.Windows.Forms.Form
@@ -115,6 +118,7 @@ $timer.Add_Tick({
             $Target = $s.TargetPath
             if ($Target -match "brave_proxy.exe") { $Target = $Target -replace "brave_proxy.exe", "brave.exe" }
             elseif ($Target -match "chrome_proxy.exe") { $Target = $Target -replace "chrome_proxy.exe", "chrome.exe" }
+            elseif ($Target -match "msedge_proxy.exe") { $Target = $Target -replace "msedge_proxy.exe", "msedge.exe" }
             elseif ($Target -match "_proxy.exe") { $Target = $Target -replace "_proxy.exe", ".exe" }
             
             if (Test-Path $Target) { $s.TargetPath = $Target } else { $s.TargetPath = $SelectedBrowser }
