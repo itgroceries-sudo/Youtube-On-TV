@@ -18,14 +18,14 @@ $ForceURL = "https://youtube.com/tv"
 $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
 $ShortcutPath = Join-Path $DesktopPath $ShortcutName
 
-# --- UNIVERSAL USER AGENT ---
+# --- UNIVERSAL USER AGENT (The Key to TV Interface) ---
 $UA_Universal = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) 94.0.4606.31/7.0 TV Safari/537.36"
 
-# --- BACKGROUND PLAY FLAGS ---
-$BackgroundFlags = "--disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling"
+# --- BACKGROUND PLAY FLAGS (The Key to Multitasking) ---
+$BackgroundFlags = "--disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows"
 
 # --- CUSTOM ICON ---
-$IconUrl = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/YouTube.ico"
+$IconUrl = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/refs/heads/main/YouTube.ico"
 $IconPath = "$env:APPDATA\YoutubeTV_Icon.ico" 
 
 # --- DETECT BROWSERS ---
@@ -115,13 +115,11 @@ $btnAction.Add_Click({
             $BrowserExe = "msedge.exe"
         }
 
-        # [REMOVED] Stop-Process (User-Friendly Mode: Don't kill browser yet)
-        
         # 2. Create Shortcut
         $WScript = New-Object -ComObject WScript.Shell
         $s = $WScript.CreateShortcut($ShortcutPath)
         
-        # Universal Killer Logic (Embedded in Shortcut ONLY)
+        # Universal Killer Logic (CMD Wrapper)
         $s.TargetPath = "cmd.exe"
         $CmdArgs = "/c taskkill /f /im $BrowserExe /t >nul 2>&1 & start `"`" `"$TargetBrowser`" --profile-directory=Default --app=$ForceURL --user-agent=`"$UA_Universal`" --start-maximized $BackgroundFlags"
         $s.Arguments = $CmdArgs
