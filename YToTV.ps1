@@ -1,7 +1,7 @@
 <# :
 @echo off
 :: ---------------------------------------------------------
-:: [WRAPPER] Standard Launcher
+:: [WRAPPER] Standard Launcher v3
 :: ---------------------------------------------------------
 setlocal
 cd /d "%~dp0"
