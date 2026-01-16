@@ -1,7 +1,7 @@
 <# :
 @echo off
+:: ✅ Code: Polite Installer
 cd /d "%~dp0"
-:: Final Version
 powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Get-Content -LiteralPath '%~f0' | Out-String | Invoke-Expression"
 goto :EOF
 : #>
@@ -25,7 +25,7 @@ $UA_Universal = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KH
 $BackgroundFlags = "--disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling"
 
 # --- CUSTOM ICON ---
-$IconUrl = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/refs/heads/main/YouTube.ico"
+$IconUrl = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/YouTube.ico"
 $IconPath = "$env:APPDATA\YoutubeTV_Icon.ico" 
 
 # --- DETECT BROWSERS ---
@@ -105,6 +105,7 @@ $btnAction.Add_Click({
         $TargetBrowser = $null
         $BrowserExe = ""
         
+        # Select Browser Path
         if ($Selection -eq "Brave Browser") { 
             $TargetBrowser = $BravePath; $BrowserExe = "brave.exe"
         } elseif ($Selection -eq "Google Chrome") { 
@@ -114,20 +115,17 @@ $btnAction.Add_Click({
             $BrowserExe = "msedge.exe"
         }
 
-        # Kill Process (Clean Slate)
-        Stop-Process -Name ($BrowserExe -replace ".exe","") -Force -ErrorAction SilentlyContinue
+        # [REMOVED] Stop-Process (User-Friendly Mode: Don't kill browser yet)
         
         # 2. Create Shortcut
         $WScript = New-Object -ComObject WScript.Shell
         $s = $WScript.CreateShortcut($ShortcutPath)
         
-        # Universal Killer Logic (CMD Wrapper)
+        # Universal Killer Logic (Embedded in Shortcut ONLY)
         $s.TargetPath = "cmd.exe"
         $CmdArgs = "/c taskkill /f /im $BrowserExe /t >nul 2>&1 & start `"`" `"$TargetBrowser`" --profile-directory=Default --app=$ForceURL --user-agent=`"$UA_Universal`" --start-maximized $BackgroundFlags"
         $s.Arguments = $CmdArgs
         $s.WindowStyle = 7 # Minimized
-        
-        # Tooltip Description
         $s.Description = "From $Selection"
 
         # 3. Apply Icon
