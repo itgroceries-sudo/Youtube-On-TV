@@ -1,23 +1,14 @@
 <# :
 @echo off
-:: ---------------------------------------------------------
-:: [WRAPPER] Standard Launcher v3
-:: ---------------------------------------------------------
-setlocal
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-Content -LiteralPath '%~f0' | Out-String | Invoke-Expression"
+:: Final Version
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Get-Content -LiteralPath '%~f0' | Out-String | Invoke-Expression"
 goto :EOF
 : #>
 
 # ---------------------------------------------------------
 # [PAYLOAD] PowerShell GUI Script
 # ---------------------------------------------------------
-# --- 1. NINJA MODE: HIDE CONSOLE WINDOW IMMEDIATELY ---
-$Win32 = Add-Type -MemberDefinition '[DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow(); [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);' -Name "Win32" -Namespace Win32 -PassThru
-$ConsolePtr = $Win32::GetConsoleWindow()
-if ($ConsolePtr -ne [IntPtr]::Zero) { $Win32::ShowWindow($ConsolePtr, 0) } # 0 = HIDE
-
-# --- 2. LOAD ASSEMBLIES ---
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
@@ -114,35 +105,32 @@ $btnAction.Add_Click({
         $TargetBrowser = $null
         $BrowserExe = ""
         
-        # Select Browser Path & Exe Name
         if ($Selection -eq "Brave Browser") { 
-            $TargetBrowser = $BravePath
-            $BrowserExe = "brave.exe"
-        } 
-        elseif ($Selection -eq "Google Chrome") { 
-            $TargetBrowser = $ChromePath
-            $BrowserExe = "chrome.exe"
-        } 
-        elseif ($Selection -eq "Microsoft Edge") {
+            $TargetBrowser = $BravePath; $BrowserExe = "brave.exe"
+        } elseif ($Selection -eq "Google Chrome") { 
+            $TargetBrowser = $ChromePath; $BrowserExe = "chrome.exe"
+        } elseif ($Selection -eq "Microsoft Edge") {
             if (Test-Path $EdgePathX64) { $TargetBrowser = $EdgePathX64 } else { $TargetBrowser = $EdgePathX86 }
             $BrowserExe = "msedge.exe"
         }
 
-        # Kill Process
+        # Kill Process (Clean Slate)
         Stop-Process -Name ($BrowserExe -replace ".exe","") -Force -ErrorAction SilentlyContinue
         
         # 2. Create Shortcut
         $WScript = New-Object -ComObject WScript.Shell
         $s = $WScript.CreateShortcut($ShortcutPath)
         
-        # --- UNIVERSAL KILLER LOGIC ---
+        # Universal Killer Logic (CMD Wrapper)
         $s.TargetPath = "cmd.exe"
         $CmdArgs = "/c taskkill /f /im $BrowserExe /t >nul 2>&1 & start `"`" `"$TargetBrowser`" --profile-directory=Default --app=$ForceURL --user-agent=`"$UA_Universal`" --start-maximized $BackgroundFlags"
         $s.Arguments = $CmdArgs
         $s.WindowStyle = 7 # Minimized
+        
+        # Tooltip Description
         $s.Description = "From $Selection"
 
-        # 3. Apply Custom Icon
+        # 3. Apply Icon
         if (Test-Path $IconPath) { $s.IconLocation = $IconPath }
         
         # 4. Save
