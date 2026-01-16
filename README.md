@@ -62,12 +62,14 @@
 iex(irm bit.ly/YToTV)
 ```
 
-หรือ
+*หรือ*
 ```Terminal
 irm bit.ly/YToTV | iex
 ```
 
 แล้วกด **Enter**
+
+---
 
 ## 📝 ขั้นตอนการใช้งาน (Step-by-Step)
 
@@ -77,6 +79,7 @@ irm bit.ly/YToTV | iex
 2.  กดปุ่ม **"Create Shortcut"**
 
 ![Installer GUI](https://github.com/user-attachments/assets/880b86c1-ea80-481c-a7fe-7113f1e974f6)
+
 *(รูปที่ 2: เลือก Browser แล้วกดปุ่มได้เลย)*
 
 ### 2. เสร็จสิ้น (Finish)
@@ -84,6 +87,7 @@ irm bit.ly/YToTV | iex
 คุณจะพบ Shortcut ชื่อ **Youtube On TV** บนหน้าจอ พร้อมไอคอนสีแดงสวยงาม
 
 ![Success Screen](https://github.com/user-attachments/assets/e1581a63-ee60-4a37-87f2-997f1eb29684)
+
 *(รูปที่ 3: Shortcut ถูกสร้างเรียบร้อย)*
 
 ### 3. การเข้าใช้งาน (Launch)
@@ -100,6 +104,3 @@ irm bit.ly/YToTV | iex
 <div align="center">
 
 **Developed with ❤️ by IT Groceries Shop**
-*Crafting Smart Solutions for Smart Users.*
-
-</div>
