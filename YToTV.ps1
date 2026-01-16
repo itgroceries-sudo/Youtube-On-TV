@@ -18,10 +18,11 @@ $ForceURL = "https://youtube.com/tv"
 $DesktopPath = [System.Environment]::GetFolderPath('Desktop')
 $ShortcutPath = Join-Path $DesktopPath $ShortcutName
 
-# --- UNIVERSAL USER AGENT (The Key to TV Interface) ---
-$UA_Universal = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 7.0) AppleWebKit/537.36 (KHTML, like Gecko) 94.0.4606.31/7.0 TV Safari/537.36"
+# --- UNIVERSAL USER AGENT (UPGRADED TO TIZEN 9.0 - 2025) ---
+# Engine: Chromium 120 (Super Stable & Fast)
+$UA_Universal = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36"
 
-# --- BACKGROUND PLAY FLAGS (The Key to Multitasking) ---
+# --- BACKGROUND PLAY FLAGS ---
 $BackgroundFlags = "--disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows"
 
 # --- CUSTOM ICON ---
@@ -36,7 +37,7 @@ $EdgePathX64 = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
 
 # --- FORM SETUP ---
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "YouTube TV Installer"
+$form.Text = "YouTube TV Installer (v6.0 - 2025 Engine)"
 $form.Size = New-Object System.Drawing.Size(500, 320)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
@@ -124,7 +125,7 @@ $btnAction.Add_Click({
         $CmdArgs = "/c taskkill /f /im $BrowserExe /t >nul 2>&1 & start `"`" `"$TargetBrowser`" --profile-directory=Default --app=$ForceURL --user-agent=`"$UA_Universal`" --start-maximized $BackgroundFlags"
         $s.Arguments = $CmdArgs
         $s.WindowStyle = 7 # Minimized
-        $s.Description = "From $Selection"
+        $s.Description = "From $Selection (Tizen 9.0)"
 
         # 3. Apply Icon
         if (Test-Path $IconPath) { $s.IconLocation = $IconPath }
