@@ -1,6 +1,6 @@
 <# :
 @echo off
-:: ✅ Code: Polite Installer
+:: ✅ Code: Hybrid Script" (Polyglot) 🧬
 cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Get-Content -LiteralPath '%~f0' | Out-String | Invoke-Expression"
 goto :EOF
@@ -58,7 +58,7 @@ function Install-TVMode ($TargetBrowserName, $TargetExeName, $TargetFullPath, $S
 
     try {
         # --- DYNAMIC SHORTCUT NAME ---
-        # ชื่อไฟล์จะเปลี่ยนเป็น "Youtube On TV - Chrome.lnk" เป็นต้น
+        # Filename changes based on browser, e.g., "Youtube On TV - Chrome.lnk"
         $DynamicName = "Youtube On TV - $ShortNameSuffix.lnk"
         $CurrentShortcutPath = Join-Path $DesktopPath $DynamicName
 
@@ -75,7 +75,7 @@ function Install-TVMode ($TargetBrowserName, $TargetExeName, $TargetFullPath, $S
         $s.Save()
 
         if (-not $Silent) { 
-            # ส่งเสียง beep เล็กน้อยเพื่อบอกว่าเสร็จแล้ว (เพราะเราไม่ได้ปิดโปรแกรม)
+            # Play a short beep to indicate completion (since the program stays open)
             [System.Console]::Beep(1000, 200) 
             return $true
         } else {
@@ -100,7 +100,7 @@ if ($Browser -ne "Ask") {
 # --- GUI MODE (Multi-Install Interface) ---
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "YouTube TV Installer (Multi-Instance)"
-$form.Size = New-Object System.Drawing.Size(500, 360) # เพิ่มความสูงนิดนึงเผื่อปุ่ม Exit
+$form.Size = New-Object System.Drawing.Size(500, 360) # Increased height for Exit button
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -134,26 +134,26 @@ if ($browserDropdown.Items.Count -gt 0) { $browserDropdown.SelectedIndex = 0 }
 $form.Controls.Add($browserDropdown)
 
 # --- BUTTONS ---
-# ปุ่ม Create (สีเขียว)
+# Create Button (Green)
 $btnCreate = New-Object System.Windows.Forms.Button; $btnCreate.Text = "Create Shortcut"; $btnCreate.Font = $fontBold; $btnCreate.Size = New-Object System.Drawing.Size(180, 45); $btnCreate.Location = New-Object System.Drawing.Point(80, 170); $btnCreate.BackColor = "#006600"; $btnCreate.ForeColor = "White"; $btnCreate.FlatStyle = "Flat"; $btnCreate.Cursor = [System.Windows.Forms.Cursors]::Hand; $form.Controls.Add($btnCreate)
 
-# ปุ่ม Exit (สีแดง)
+# Exit Button (Red)
 $btnExit = New-Object System.Windows.Forms.Button; $btnExit.Text = "Exit"; $btnExit.Font = $fontBold; $btnExit.Size = New-Object System.Drawing.Size(120, 45); $btnExit.Location = New-Object System.Drawing.Point(280, 170); $btnExit.BackColor = "#990000"; $btnExit.ForeColor = "White"; $btnExit.FlatStyle = "Flat"; $btnExit.Cursor = [System.Windows.Forms.Cursors]::Hand; $form.Controls.Add($btnExit)
 
 $footerLabel = New-Object System.Windows.Forms.Label; $footerLabel.Text = "Developed by IT Groceries Shop"; $footerLabel.Font = $fontFooter; $footerLabel.ForeColor = "#666666"; $footerLabel.AutoSize = $false; $footerLabel.Size = New-Object System.Drawing.Size(500, 30); $footerLabel.Location = New-Object System.Drawing.Point(0, 280); $footerLabel.TextAlign = "MiddleCenter"; $form.Controls.Add($footerLabel)
 
 # --- EVENTS ---
 
-# ปุ่ม Exit -> ปิดโปรแกรม
+# Exit Button -> Close Application
 $btnExit.Add_Click({ $form.Close() })
 
-# ปุ่ม Create -> สร้าง แล้วไม่ปิด
+# Create Button -> Create Shortcut without closing
 $btnCreate.Add_Click({
     if ($browserDropdown.Items.Count -eq 0) { [System.Windows.Forms.MessageBox]::Show("No compatible browser found!", "Error"); return }
 
     $btnCreate.Enabled = $false
     $statusLabel.Text = "Installing..."
-    $form.Refresh() # บังคับวาดหน้าจอใหม่ทันที
+    $form.Refresh() # Force redraw the UI immediately
 
     $Selection = $browserDropdown.SelectedItem.ToString()
     $Result = $false
@@ -162,7 +162,7 @@ $btnCreate.Add_Click({
     elseif ($Selection -match "Chrome") { $Result = Install-TVMode "Google Chrome" "chrome.exe" $ChromePath "Chrome" }
     elseif ($Selection -match "Edge") { if (Test-Path $EdgePathX64) { $Result = Install-TVMode "Microsoft Edge" "msedge.exe" $EdgePathX64 "Edge" } else { $Result = Install-TVMode "Microsoft Edge" "msedge.exe" $EdgePathX86 "Edge" } }
 
-    # หลังสร้างเสร็จ คืนค่ากลับมาให้พร้อมกดต่อ
+    # Reset state after creation to allow further actions
     if ($Result) {
         $statusLabel.Text = "Success! Created: Youtube On TV - $Selection"
         $statusLabel.ForeColor = "#00ff00"
