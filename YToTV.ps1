@@ -7,8 +7,8 @@ goto :EOF
 : #>
 
 # ==================================================================================
-#  📺 YouTube TV Desktop Installer v7.1 (Multi-Instance Edition)
-#  Engine: Tizen 9.0 (2025) | Naming: Dynamic per Browser
+#  📺 YouTube TV Desktop Installer v7.2 (Full Screen Edition)
+#  Engine: Tizen 9.0 (2025) | Mode: True Full Screen (No Title Bar)
 # ==================================================================================
 
 # 1. PARAMETER BLOCK
@@ -17,7 +17,7 @@ param(
     [switch]$Silent
 )
 
-# 2. HIDE CONSOLE (Ninja Mode)
+# 2. HIDE CONSOLE
 if (-not $Silent) {
     $Win32 = Add-Type -MemberDefinition '[DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow(); [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);' -Name "Win32" -Namespace Win32 -PassThru
     $ConsolePtr = $Win32::GetConsoleWindow()
@@ -43,7 +43,7 @@ $ChromePath = "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
 $EdgePathX86 = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
 $EdgePathX64 = "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
 
-# 4. INSTALL FUNCTION (Dynamic Naming)
+# 4. INSTALL FUNCTION
 function Install-TVMode ($TargetBrowserName, $TargetExeName, $TargetFullPath, $ShortNameSuffix) {
     if (-not (Test-Path $TargetFullPath)) { 
         if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show("$TargetBrowserName not found!", "Error", "OK", "Error") }
@@ -51,31 +51,28 @@ function Install-TVMode ($TargetBrowserName, $TargetExeName, $TargetFullPath, $S
     }
 
     try {
-        # Download Icon
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         if (-not (Test-Path $IconPath)) { (New-Object System.Net.WebClient).DownloadFile($IconUrl, $IconPath) }
     } catch {}
 
     try {
-        # --- DYNAMIC SHORTCUT NAME ---
-        # Filename changes based on browser, e.g., "Youtube On TV - Chrome.lnk"
         $DynamicName = "Youtube On TV - $ShortNameSuffix.lnk"
         $CurrentShortcutPath = Join-Path $DesktopPath $DynamicName
 
         $WScript = New-Object -ComObject WScript.Shell
         $s = $WScript.CreateShortcut($CurrentShortcutPath)
         
+        # [UPDATED] เปลี่ยน --start-maximized เป็น --start-fullscreen
         $s.TargetPath = "cmd.exe"
-        $CmdArgs = "/c taskkill /f /im $TargetExeName /t >nul 2>&1 & start `"`" `"$TargetFullPath`" --profile-directory=Default --app=$ForceURL --user-agent=`"$UA_Universal`" --start-maximized $BackgroundFlags"
+        $CmdArgs = "/c taskkill /f /im $TargetExeName /t >nul 2>&1 & start `"`" `"$TargetFullPath`" --profile-directory=Default --app=$ForceURL --user-agent=`"$UA_Universal`" --start-fullscreen $BackgroundFlags"
         $s.Arguments = $CmdArgs
-        $s.WindowStyle = 7
+        $s.WindowStyle = 3 # 3 = Maximized (เผื่อไว้) แต่ตัว Chrome จะรับคำสั่ง fullscreen เอง
         $s.Description = "TV Mode for $TargetBrowserName"
         
         if (Test-Path $IconPath) { $s.IconLocation = $IconPath }
         $s.Save()
 
         if (-not $Silent) { 
-            # Play a short beep to indicate completion (since the program stays open)
             [System.Console]::Beep(1000, 200) 
             return $true
         } else {
@@ -97,10 +94,10 @@ if ($Browser -ne "Ask") {
     exit
 }
 
-# --- GUI MODE (Multi-Install Interface) ---
+# --- GUI MODE ---
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "YouTube TV Installer (Multi-Instance)"
-$form.Size = New-Object System.Drawing.Size(500, 360) # Increased height for Exit button
+$form.Text = "YouTube TV Installer (Full Screen)"
+$form.Size = New-Object System.Drawing.Size(500, 360)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = "FixedDialog"
 $form.MaximizeBox = $false
@@ -113,15 +110,12 @@ $fontBody = New-Object System.Drawing.Font("Segoe UI", 10)
 $fontBold = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $fontFooter = New-Object System.Drawing.Font("Consolas", 8)
 
-# Header
 $headerPanel = New-Object System.Windows.Forms.Panel; $headerPanel.Size = New-Object System.Drawing.Size(500, 60); $headerPanel.Location = New-Object System.Drawing.Point(0, 0); $headerPanel.BackColor = "#cc0000"
 $headerLabel = New-Object System.Windows.Forms.Label; $headerLabel.Text = "YouTube TV Installer"; $headerLabel.Font = $fontHeader; $headerLabel.ForeColor = "White"; $headerLabel.AutoSize = $false; $headerLabel.Size = New-Object System.Drawing.Size(500, 60); $headerLabel.TextAlign = "MiddleCenter"
 $headerPanel.Controls.Add($headerLabel); $form.Controls.Add($headerPanel)
 
-# Status
 $statusLabel = New-Object System.Windows.Forms.Label; $statusLabel.Text = "Select browser(s) to install shortcuts."; $statusLabel.Font = $fontBody; $statusLabel.ForeColor = "#dddddd"; $statusLabel.AutoSize = $false; $statusLabel.Size = New-Object System.Drawing.Size(480, 30); $statusLabel.Location = New-Object System.Drawing.Point(10, 70); $statusLabel.TextAlign = "MiddleCenter"; $form.Controls.Add($statusLabel)
 
-# Dropdown
 $browserLabel = New-Object System.Windows.Forms.Label; $browserLabel.Text = "Target:"; $browserLabel.Font = $fontBold; $browserLabel.ForeColor = "#00ccff"; $browserLabel.AutoSize = $true; $browserLabel.Location = New-Object System.Drawing.Point(140, 115); $form.Controls.Add($browserLabel)
 
 $browserDropdown = New-Object System.Windows.Forms.ComboBox; $browserDropdown.Size = New-Object System.Drawing.Size(180, 30); $browserDropdown.Location = New-Object System.Drawing.Point(200, 112); $browserDropdown.DropDownStyle = "DropDownList"; $browserDropdown.BackColor = "#333333"; $browserDropdown.ForeColor = "White"; $browserDropdown.Font = $fontBody
@@ -133,27 +127,20 @@ if (Test-Path $EdgePathX64) { $browserDropdown.Items.Add("Microsoft Edge") | Out
 if ($browserDropdown.Items.Count -gt 0) { $browserDropdown.SelectedIndex = 0 }
 $form.Controls.Add($browserDropdown)
 
-# --- BUTTONS ---
-# Create Button (Green)
 $btnCreate = New-Object System.Windows.Forms.Button; $btnCreate.Text = "Create Shortcut"; $btnCreate.Font = $fontBold; $btnCreate.Size = New-Object System.Drawing.Size(180, 45); $btnCreate.Location = New-Object System.Drawing.Point(80, 170); $btnCreate.BackColor = "#006600"; $btnCreate.ForeColor = "White"; $btnCreate.FlatStyle = "Flat"; $btnCreate.Cursor = [System.Windows.Forms.Cursors]::Hand; $form.Controls.Add($btnCreate)
 
-# Exit Button (Red)
 $btnExit = New-Object System.Windows.Forms.Button; $btnExit.Text = "Exit"; $btnExit.Font = $fontBold; $btnExit.Size = New-Object System.Drawing.Size(120, 45); $btnExit.Location = New-Object System.Drawing.Point(280, 170); $btnExit.BackColor = "#990000"; $btnExit.ForeColor = "White"; $btnExit.FlatStyle = "Flat"; $btnExit.Cursor = [System.Windows.Forms.Cursors]::Hand; $form.Controls.Add($btnExit)
 
 $footerLabel = New-Object System.Windows.Forms.Label; $footerLabel.Text = "Developed by IT Groceries Shop"; $footerLabel.Font = $fontFooter; $footerLabel.ForeColor = "#666666"; $footerLabel.AutoSize = $false; $footerLabel.Size = New-Object System.Drawing.Size(500, 30); $footerLabel.Location = New-Object System.Drawing.Point(0, 280); $footerLabel.TextAlign = "MiddleCenter"; $form.Controls.Add($footerLabel)
 
-# --- EVENTS ---
-
-# Exit Button -> Close Application
 $btnExit.Add_Click({ $form.Close() })
 
-# Create Button -> Create Shortcut without closing
 $btnCreate.Add_Click({
     if ($browserDropdown.Items.Count -eq 0) { [System.Windows.Forms.MessageBox]::Show("No compatible browser found!", "Error"); return }
 
     $btnCreate.Enabled = $false
     $statusLabel.Text = "Installing..."
-    $form.Refresh() # Force redraw the UI immediately
+    $form.Refresh() 
 
     $Selection = $browserDropdown.SelectedItem.ToString()
     $Result = $false
@@ -162,7 +149,6 @@ $btnCreate.Add_Click({
     elseif ($Selection -match "Chrome") { $Result = Install-TVMode "Google Chrome" "chrome.exe" $ChromePath "Chrome" }
     elseif ($Selection -match "Edge") { if (Test-Path $EdgePathX64) { $Result = Install-TVMode "Microsoft Edge" "msedge.exe" $EdgePathX64 "Edge" } else { $Result = Install-TVMode "Microsoft Edge" "msedge.exe" $EdgePathX86 "Edge" } }
 
-    # Reset state after creation to allow further actions
     if ($Result) {
         $statusLabel.Text = "Success! Created: Youtube On TV - $Selection"
         $statusLabel.ForeColor = "#00ff00"
