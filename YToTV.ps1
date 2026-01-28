@@ -24,7 +24,7 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 
 # --- [2. CONFIGURATION] ---
 # URL ใช้ตัวเล็กตามที่คุณแจ้ง
-$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 
