@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v70.0 (PLATINUM FIX)
-#  Status: MemoryStream Icons | Correct Header | Stable
+#  YOUTUBE TV INSTALLER v71.0 (ASSET VALIDATOR)
+#  Status: Auto-Fix Corrupt Icons | Cache Buster
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
@@ -95,7 +95,7 @@ if ($Silent) {
     Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# --- Assets ---
+# --- Assets (Auto-Clean Logic) ---
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -105,6 +105,15 @@ $Assets = @{
 
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
+    
+    # [FIX] Check for Corrupted/Empty Files (< 1KB) and Delete them
+    if (Test-Path $D) {
+        if ((Get-Item $D).Length -lt 100) { 
+            Remove-Item $D -Force 
+            if(!$Silent){ Write-Host " [CLEAN]    Bad File: $N" -ForegroundColor Red }
+        }
+    }
+
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ 
         try{ (New-Object Net.WebClient).DownloadFile($U,$D)
              if(!$Silent){ Write-Host " [DOWNLOAD] OK: $N" -ForegroundColor Green }
@@ -126,7 +135,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    # [FIX] Console Header Corrected
+    # [FIX] Version Header
     Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
@@ -198,7 +207,6 @@ $DetectedList = @()
 foreach ($b in $Global:Browsers) {
     $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
     
-    # Pre-load image securely
     $ReadyImage = Load-Icon-Safe "$InstallDir\$($b.K).ico"
     
     if ($FP) { 
