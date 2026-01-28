@@ -3,11 +3,16 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v63.0 (TRUE SILENT)
-#  Status: No UAC on Silent | Fix Shortcut | URL Fixed
+#  YOUTUBE TV INSTALLER v73.0 (SIMPLE SOURCE / v23 LOGIC)
+#  Status: Direct Path Binding | Win10 Fix | Temp Dir
 # =========================================================
 
-# --- [1. MANUAL ARGUMENT PARSING] ---
+# --- [1. CONFIGURATION] ---
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
+$SelfURL   = "$GitHubRaw/YToTV.ps1"
+$InstallDir = "$env:TEMP\ITG_YToTV"
+
+# --- [2. ARGUMENTS & INIT] ---
 $Silent = $false
 $Browser = "Ask"
 $ErrorActionPreference = 'SilentlyContinue'
@@ -16,55 +21,37 @@ $ErrorActionPreference = 'SilentlyContinue'
 $AllArgs = @()
 if ($args) { $AllArgs += $args }
 if ($param) { $AllArgs += $param.Split(" ") }
-
 for ($i = 0; $i -lt $AllArgs.Count; $i++) {
     if ($AllArgs[$i] -eq "-Silent") { $Silent = $true }
     if ($AllArgs[$i] -eq "-Browser" -and ($i + 1 -lt $AllArgs.Count)) { $Browser = $AllArgs[$i+1] }
 }
 
-# --- [2. CONFIGURATION] ---
-# URL ใช้ตัวเล็กตามที่คุณแจ้ง
-$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
-$SelfURL   = "$GitHubRaw/YToTV.ps1"
-$InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
-
 # --- [3. WEB LAUNCH CHECK] ---
 if (-not $PSScriptRoot -and -not $ScriptPath) {
-    if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
-    $TempScript = "$env:TEMP\YToTV.ps1"
-    
-    try { 
-        (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) 
-    } catch { 
-        Write-Host "[ERROR] Download Failed from: $SelfURL" -ForegroundColor Red
-        Write-Host "Server Message: $($_.Exception.Message)" -ForegroundColor Yellow
-        if (!$Silent) { Read-Host "Press Enter to exit..." }
-        exit 
+    if (!$Silent) { 
+        Write-Host "==========================================" -ForegroundColor Yellow
+        Write-Host "   DOWNLOADING SCRIPT...                  " -ForegroundColor Yellow
+        Write-Host "==========================================" -ForegroundColor Yellow
     }
+    $TempScript = "$env:TEMP\YToTV.ps1"
+    try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } catch { exit }
 
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$TempScript`"")
     if ($Silent) { $PassArgs += "-Silent" }
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
 
-    # [FIX] ถ้า Silent ไม่ต้องขอ Admin (-Verb RunAs) และซ่อนหน้าต่างทันที
-    if ($Silent) {
-        Start-Process PowerShell -ArgumentList $PassArgs -WindowStyle Hidden
-    } else {
-        Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
-    }
+    if ($Silent) { Start-Process PowerShell -ArgumentList $PassArgs -WindowStyle Hidden }
+    else { Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs }
     exit
 }
 
 # --- [4. ADMIN CHECK] ---
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
-
-# [FIX] ถ้าเป็น Silent ให้ข้ามการบังคับ Admin ไปเลย (ทำงานใน User Mode)
 if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $Target = if ($ScriptPath) { $ScriptPath } else { $PSCommandPath }
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$Target`"")
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
-    
     Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
     exit
 }
@@ -75,7 +62,6 @@ if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltI
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# Win32 API
 $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -86,19 +72,11 @@ $Win32 = Add-Type -MemberDefinition '
 
 # --- [5. DPI & LAYOUT] ---
 $Graphics = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero)
-$DPI = $Graphics.DpiX
-$Graphics.Dispose()
-$Scale = $DPI / 96.0
-
-$BaseW = 500
-$BaseH = 820
-$Gap = 0
-$ConsoleW_Px = [int]($BaseW * $Scale)
-$ConsoleH_Px = [int]($BaseH * $Scale)
+$Scale = $Graphics.DpiX / 96.0; $Graphics.Dispose()
+$BaseW = 500; $BaseH = 820; $Gap = 0
+$ConsoleW_Px = [int]($BaseW * $Scale); $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-$TotalWidth_Px = ($ConsoleW_Px * 2) + $Gap
-$StartX_Px = ($Scr.Width - $TotalWidth_Px) / 2
-$StartY_Px = ($Scr.Height - $ConsoleH_Px) / 2
+$StartX_Px = ($Scr.Width - ($ConsoleW_Px * 2)) / 2; $StartY_Px = ($Scr.Height - $ConsoleH_Px) / 2
 
 # --- [6. CONSOLE SETUP] ---
 $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
@@ -106,23 +84,40 @@ $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 if ($Silent) {
     [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    $host.UI.RawUI.WindowTitle = "Installer Console"
+    $host.UI.RawUI.WindowTitle = "Installer Log Console"
     $host.UI.RawUI.BackgroundColor = "Black"
-    $host.UI.RawUI.ForegroundColor = "Green"
+    $host.UI.RawUI.ForegroundColor = "Gray"
     Clear-Host
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
-    Write-Host "`n    YOUTUBE TV INSTALLER v63.0" -ForegroundColor Cyan
-    Write-Host "    [INIT] System Ready..." -ForegroundColor Yellow
+    
+    Write-Host "==========================================" -ForegroundColor Yellow
+    Write-Host "   DOWNLOADING ASSETS...                  " -ForegroundColor Yellow
+    Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# --- Assets ---
+# --- Assets (Cleaner) ---
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
     "Chrome"="$GitHubRaw/IconFiles/Chrome.ico"; "Edge"="$GitHubRaw/IconFiles/Edge.ico"; "Brave"="$GitHubRaw/IconFiles/Brave.ico"
     "Vivaldi"="$GitHubRaw/IconFiles/Vivaldi.ico"; "Yandex"="$GitHubRaw/IconFiles/Yandex.ico"; "Chromium"="$GitHubRaw/IconFiles/Chromium.ico"; "Thorium"="$GitHubRaw/IconFiles/Thorium.ico"
 }
-function DL ($U, $N) { $D="$InstallDir\$N"; if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ try{ (New-Object Net.WebClient).DownloadFile($U,$D) }catch{} }; return $D }
+
+function DL ($U, $N) { 
+    $D="$InstallDir\$N"
+    # Auto-Clean corrupt files
+    if (Test-Path $D) { if ((Get-Item $D).Length -lt 100) { Remove-Item $D -Force } }
+
+    if(!(Test-Path $D)){ 
+        try{ (New-Object Net.WebClient).DownloadFile($U,$D)
+             if(!$Silent){ Write-Host " [DOWNLOAD] OK: $N" -ForegroundColor Green }
+        }catch{} 
+    } else {
+        if(!$Silent){ Write-Host " [CACHE]    OK: $N" -ForegroundColor DarkGray }
+    }
+    return $D
+}
+
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
 $LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
@@ -131,10 +126,16 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# --- Install Logic ---
+# --- Browser Logic ---
+if(!$Silent){ 
+    Write-Host "`n==========================================" -ForegroundColor Green
+    Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
+    Write-Host "==========================================" -ForegroundColor Green
+    Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
+}
+
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
-
 $Global:Browsers = @(
     @{N="Google Chrome"; E="chrome.exe"; K="Chrome"; P=@("$PF\Google\Chrome\Application\chrome.exe","$PF86\Google\Chrome\Application\chrome.exe")}
     @{N="Microsoft Edge"; E="msedge.exe"; K="Edge"; P=@("$PF86\Microsoft\Edge\Application\msedge.exe","$PF\Microsoft\Edge\Application\msedge.exe")}
@@ -147,13 +148,11 @@ $Global:Browsers = @(
 
 function Install-Browser {
     param($NameKey) 
-    
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }
     if (!$Obj -or !$Obj.Path) { return }
 
     $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
     $Sut = Join-Path $Desktop $ShortcutName
-    
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
@@ -164,20 +163,13 @@ function Install-Browser {
     $s.Save()
     
     if(!$Silent){ 
-        $Label = " [+] $($Obj.N)"
-        $PadLength = 35 - $Label.Length
-        if($PadLength -lt 1){$PadLength=1}
-        $Dots = "." * $PadLength
-        
-        Write-Host "$Label " -NoNewline -ForegroundColor White
-        Write-Host "$Dots " -NoNewline -ForegroundColor DarkGray
-        Write-Host "INSTALLED" -ForegroundColor Green
+        Write-Host " [INSTALL] $($Obj.N)... " -NoNewline -ForegroundColor White
+        Write-Host "DONE" -ForegroundColor Green
     }
 }
 
-# --- CLI Mode (Silent or Browser Arg) ---
+# --- CLI Mode ---
 if ($Silent -or ($Browser -ne "Ask")) {
-    if(!$Silent){ Write-Host "[CLI] Target: $Browser" -ForegroundColor Cyan }
     foreach($b in $Global:Browsers){
         if($b.N -match $Browser -or $b.K -match $Browser){
             $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
@@ -191,23 +183,23 @@ if ($Silent -or ($Browser -ne "Ask")) {
 #  GUI (WPF)
 # =========================================================
 
-Write-Host "    [INIT] Launching GUI..." -ForegroundColor Yellow
-
 $DetectedList = @()
-function Create-ImageObject ($FilePath) {
-    try { 
-        if(!(Test-Path $FilePath)){ return $null }
-        $Abs = (Convert-Path $FilePath); $Uri = New-Object Uri($Abs, [UriKind]::Absolute) 
-        $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$Uri; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); return $B 
-    } catch { return $null }
+foreach ($b in $Global:Browsers) {
+    $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
+    
+    # [FIX] v23/Simple Logic: Store String Path directly
+    $IconPath = "$InstallDir\$($b.K).ico"
+    
+    if ($FP) { 
+        $b.Path = $FP
+        if(!$Silent){ Write-Host " [FOUND]   $($b.N)" -ForegroundColor Green }
+        $DetectedList += @{ N=$b.N; Inst=$true; Img=$IconPath }
+    } else {
+        $DetectedList += @{ N=$b.N; Inst=$false; Img=$IconPath }
+    }
 }
 
-foreach ($b in $Global:Browsers) {
-    $FoundPath = $null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FoundPath = $p; break } }
-    $ReadyImage = Create-ImageObject "$InstallDir\$($b.K).ico"
-    if ($FoundPath) { $b.Path=$FoundPath; $DetectedList += @{ N=$b.N; Inst=$true; Img=$ReadyImage } }
-    else { $DetectedList += @{ N=$b.N; Inst=$false; Img=$ReadyImage } }
-}
+if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
 
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -256,7 +248,7 @@ try {
     $WPF_Left_DIU = $RightOfConsole_Px / $Scale; $WPF_Top_DIU = $StartY_Px / $Scale
     $Window.Left = $WPF_Left_DIU; $Window.Top = $WPF_Top_DIU
 } catch {}
-if (Test-Path $LocalIcon) { $Obj = Create-ImageObject $LocalIcon; $Window.Icon = $Obj; $Window.FindName("Logo").Source = $Obj }
+if (Test-Path $LocalIcon) { $Window.Icon = $LocalIcon; $Window.FindName("Logo").Source = $LocalIcon }
 
 $Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG")
 
@@ -268,12 +260,18 @@ foreach ($b in $DetectedList) {
     
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
     
-    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
-    $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; if(!$b.Inst){$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666"}; [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
+    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; 
+    # [FIX] Direct String Assignment (Let WPF Handle it)
+    if (Test-Path $b.Img) { $Img.Source = $b.Img }
+    
+    [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
+    $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; 
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
     $Chk.Tag = $b.N 
     
-    if($b.Inst){$Chk.IsChecked=$true}else{$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}; [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
+    if($b.Inst){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
+    [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
+    [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
     if($b.Inst){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
 }
