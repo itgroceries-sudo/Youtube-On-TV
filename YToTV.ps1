@@ -3,14 +3,13 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v72.0 (TEMP DIR & ICON FIX)
-#  Status: Move to Temp | Win10 URI Fix | Stable
+#  YOUTUBE TV INSTALLER v73.0 (SIMPLE SOURCE / v23 LOGIC)
+#  Status: Direct Path Binding | Win10 Fix | Temp Dir
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
-# [FIX] Move to TEMP as requested
 $InstallDir = "$env:TEMP\ITG_YToTV"
 
 # --- [2. ARGUMENTS & INIT] ---
@@ -96,7 +95,7 @@ if ($Silent) {
     Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# --- Assets (Saved to TEMP) ---
+# --- Assets (Cleaner) ---
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -184,32 +183,19 @@ if ($Silent -or ($Browser -ne "Ask")) {
 #  GUI (WPF)
 # =========================================================
 
-# [FIX] URI Method with Absolute Path (Win10 Friendly)
-function Load-Icon-Safe {
-    param($Path)
-    try { 
-        if(!(Test-Path $Path)){ return $null }
-        # Convert to Absolute Path explicitly
-        $AbsPath = (Resolve-Path $Path).Path
-        $Uri = New-Object Uri($AbsPath)
-        $B = New-Object System.Windows.Media.Imaging.BitmapImage
-        $B.BeginInit(); $B.UriSource = $Uri; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
-        return $B 
-    } catch { return $null }
-}
-
 $DetectedList = @()
 foreach ($b in $Global:Browsers) {
     $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
     
-    $ReadyImage = Load-Icon-Safe "$InstallDir\$($b.K).ico"
+    # [FIX] v23/Simple Logic: Store String Path directly
+    $IconPath = "$InstallDir\$($b.K).ico"
     
     if ($FP) { 
         $b.Path = $FP
         if(!$Silent){ Write-Host " [FOUND]   $($b.N)" -ForegroundColor Green }
-        $DetectedList += @{ N=$b.N; Inst=$true; Img=$ReadyImage }
+        $DetectedList += @{ N=$b.N; Inst=$true; Img=$IconPath }
     } else {
-        $DetectedList += @{ N=$b.N; Inst=$false; Img=$ReadyImage }
+        $DetectedList += @{ N=$b.N; Inst=$false; Img=$IconPath }
     }
 }
 
@@ -262,7 +248,7 @@ try {
     $WPF_Left_DIU = $RightOfConsole_Px / $Scale; $WPF_Top_DIU = $StartY_Px / $Scale
     $Window.Left = $WPF_Left_DIU; $Window.Top = $WPF_Top_DIU
 } catch {}
-if (Test-Path $LocalIcon) { $Obj = Load-Icon-Safe $LocalIcon; $Window.Icon = $Obj; $Window.FindName("Logo").Source = $Obj }
+if (Test-Path $LocalIcon) { $Window.Icon = $LocalIcon; $Window.FindName("Logo").Source = $LocalIcon }
 
 $Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG")
 
@@ -274,7 +260,11 @@ foreach ($b in $DetectedList) {
     
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
     
-    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
+    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; 
+    # [FIX] Direct String Assignment (Let WPF Handle it)
+    if (Test-Path $b.Img) { $Img.Source = $b.Img }
+    
+    [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
     $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; 
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
     $Chk.Tag = $b.N 
