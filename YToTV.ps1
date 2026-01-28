@@ -1,5 +1,5 @@
 # =========================================================
-#  YOUTUBE TV LAUNCHER v39.0 (Silent Start)
+#  YOUTUBE TV LAUNCHER v40.0 (User Mode)
 # =========================================================
 param([switch]$Silent, [string]$Browser)
 
@@ -8,19 +8,16 @@ $Dest = "$env:TEMP\YToTV.cmd"
 
 try {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Write-Host "[INIT] Downloading Core..." -ForegroundColor Cyan
+    Write-Host "[INIT] Downloading..." -ForegroundColor Cyan
     (New-Object System.Net.WebClient).DownloadFile($Url, $Dest)
 } catch {
     Write-Host "[ERROR] Download Failed." -ForegroundColor Red; exit
 }
 
-$ExecArgs = @()
-if ($Silent) { $ExecArgs += "-Silent" }
-if ($Browser) { $ExecArgs += "-Browser"; $ExecArgs += $Browser }
+# เตรียมคำสั่ง (ไม่ต้อง RunAs Admin แล้ว)
+$ArgsList = @()
+if ($Silent) { $ArgsList += "-Silent" }
+if ($Browser) { $ArgsList += "-Browser"; $ArgsList += $Browser }
 
-# สั่งรันแบบซ่อนหน้าต่าง Launcher (WindowStyle Hidden)
-if ($ExecArgs.Count -gt 0) {
-    Start-Process -FilePath $Dest -ArgumentList $ExecArgs -Verb RunAs -WindowStyle Hidden
-} else {
-    Start-Process -FilePath $Dest -Verb RunAs -WindowStyle Hidden
-}
+# สั่งรันแบบซ่อนหน้าต่าง cmd (WindowStyle Hidden)
+Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
