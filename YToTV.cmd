@@ -3,7 +3,7 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v43.0)
+#  YOUTUBE TV INSTALLER (CORE v44.0)
 #  Status: Final Release | Architecture: VMD Hybrid
 # =========================================================
 
@@ -12,7 +12,7 @@ $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
 # 2. ENVIRONMENT SETUP
-# Use LocalAppData for persistent icons (avoids missing icon issue)
+# Use LocalAppData for persistent icons
 $InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
@@ -30,10 +30,10 @@ $Win32 = Add-Type -MemberDefinition '
 # Console Visibility Handling
 $ConsoleHandle = [Native.Win32]::GetConsoleWindow()
 if ($Silent) {
-    # If Silent: Ensure console stays hidden
+    # If Silent: Hide console completely (SW_HIDE = 0)
     [Native.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    # If Normal: Show console and setup colors (SW_SHOW = 5)
+    # If Normal: Show console (SW_SHOW = 5) and clean up UI
     [Native.Win32]::ShowWindow($ConsoleHandle, 5) | Out-Null
     $host.UI.RawUI.WindowTitle = "Installer Console"
     $host.UI.RawUI.BackgroundColor = "Black"
@@ -95,6 +95,7 @@ function Install ($Obj) {
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
+    # Taskkill runs without admin for user processes
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
     
@@ -136,7 +137,7 @@ try {
     [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v43.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
+if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v44.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
 
 # Detect Browsers & Load Icons
 $List=@(); foreach($b in $Browsers){
