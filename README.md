@@ -90,8 +90,25 @@ irm bit.ly/YToTV | iex
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Brave -Silent
 ```
+### 🟠 สำหรับ Opera (Standard)
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Opera -Silent
+```
+### 🟠 สำหรับ Opera GX (Gaming)
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser OperaGX -Silent
+```
+### 🟠 สำหรับ Vivaldi
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Vivaldi -Silent
+```
+### 🟠 สำหรับ Yandex Browser
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Yandex -Silent
+```
+
 ### ⚙️ คำอธิบาย Parameter
-* **`-Browser [Name]`** : สั่งเจาะจง Browser ที่จะลง (`Edge`, `Chrome`, `Brave`)
+* **`-Browser [Name]`** : สั่งเจาะจง Browser ที่จะลง (`Edge`, `Chrome`, `Brave``Opera`,`OperaGX`,`Vivaldi`,`Yandex`)
 * **`-Silent`** : ทำงานเงียบๆ ไม่ต้องแสดง Message Box เมื่อเสร็จสิ้น
 
 ---
