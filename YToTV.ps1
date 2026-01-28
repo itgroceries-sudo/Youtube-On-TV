@@ -4,19 +4,15 @@
 ::  YOUTUBE TV INSTALLER v23.0 (LAYOUT REMASTERED) ♥♥♥
 ::  Engine: Tizen 9.0 | UI: Header Side-by-Side
 :: =========================================================
-title IT Groceries Shop - Console
-setlocal
-cd /d %~dp0
-
-:: Admin Check
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    echo Requesting Administrator privileges...
+cd /d "%~dp0"
+fsutil dirty query %systemdrive% >nul 2>&1
+if %errorLevel% NEQ 0 (
+    echo [INFO] Requesting Administrator privileges...
     powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
-    goto :eof
+    exit /b
 )
 
-:: Run PowerShell
+title IT Groceries Shop - Console (Admin)
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression ($(Get-Content '%~f0' -Raw))"
 goto :eof
 #>
