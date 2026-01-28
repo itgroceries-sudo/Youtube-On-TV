@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v65.0 (TITLE & LAYOUT FIX)
-#  Status: Title Fixed | Console Fit Win11 | Win10 Icons
+#  YOUTUBE TV INSTALLER v66.0 (SYNTAX HOTFIX)
+#  Status: Fix ParserError | Stable Logic | No Extra Changes
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
@@ -29,7 +29,6 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 # --- [3. WEB LAUNCH CHECK] ---
 if (-not $PSScriptRoot -and -not $ScriptPath) {
     if (!$Silent) { 
-        # [FIX] Safe Length for Win11
         Write-Host "==========================================" -ForegroundColor Yellow
         Write-Host "   DOWNLOADING SCRIPT...                  " -ForegroundColor Yellow
         Write-Host "==========================================" -ForegroundColor Yellow
@@ -91,7 +90,6 @@ if ($Silent) {
     Clear-Host
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
     
-    # [FIX] Adjusted width to 42 chars to prevent wrap on Win11
     Write-Host "==========================================" -ForegroundColor Yellow
     Write-Host "   DOWNLOADING ASSETS...                  " -ForegroundColor Yellow
     Write-Host "==========================================" -ForegroundColor Yellow
@@ -128,7 +126,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host "   YOUTUBE TV INSTALLER v65.0             " -ForegroundColor Green
+    Write-Host "   YOUTUBE TV INSTALLER v66.0             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
 }
@@ -182,16 +180,7 @@ if ($Silent -or ($Browser -ne "Ask")) {
 #  GUI (WPF)
 # =========================================================
 
-foreach ($b in $Global:Browsers) {
-    $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
-    if($FP){ 
-        $b.Path = $FP
-        if(!$Silent){ Write-Host " [FOUND]   $($b.N)" -ForegroundColor Green }
-    }
-}
-
-if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
-
+$DetectedList = @()
 function Create-ImageObject ($FilePath) {
     try { 
         if(!(Test-Path $FilePath)){ return $null }
@@ -203,7 +192,20 @@ function Create-ImageObject ($FilePath) {
     } catch { return $null }
 }
 
-# [FIXED TITLE HERE]
+foreach ($b in $Global:Browsers) {
+    $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
+    $ReadyImage = Create-ImageObject "$InstallDir\$($b.K).ico"
+    if ($FP) { 
+        $b.Path = $FP
+        if(!$Silent){ Write-Host " [FOUND]   $($b.N)" -ForegroundColor Green }
+        $DetectedList += @{ N=$b.N; Inst=$true; Img=$ReadyImage }
+    } else {
+        $DetectedList += @{ N=$b.N; Inst=$false; Img=$ReadyImage }
+    }
+}
+
+if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
+
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
@@ -255,7 +257,7 @@ if (Test-Path $LocalIcon) { $Obj = Create-ImageObject $LocalIcon; $Window.Icon =
 
 $Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG")
 
-foreach ($b in $Global:Browsers) {
+foreach ($b in $DetectedList) {
     $Row = New-Object System.Windows.Controls.Grid; $Row.Height = 45; $Row.Margin = "0,5,0,5"
     $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::Auto}))
     $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)}))
@@ -263,16 +265,16 @@ foreach ($b in $Global:Browsers) {
     
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
     
-    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($Create-ImageObject){$Img.Source=(Create-ImageObject "$InstallDir\$($b.K).ico")}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
+    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
     $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; 
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
     $Chk.Tag = $b.N 
     
-    if($b.Path){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
+    if($b.Inst){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
     [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
     [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
-    if($b.Path){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
+    if($b.Inst){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
 }
 
 $BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); $BC.Add_Click({ $Window.Close() })
