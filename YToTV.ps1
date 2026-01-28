@@ -1,133 +1,135 @@
-<# : hybrid batch + powershell script (VMD Style Header)
+<# : hybrid batch + powershell script
 @powershell -noprofile -Window Hidden -c "$param='%*';$ScriptPath='%~f0';iex((Get-Content('%~f0') -Raw))"&exit/b
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v49.0 (VMD REBIRTH)
-#  Architecture: Single-File Hybrid (Based on VMD Builder)
+#  YOUTUBE TV INSTALLER v51.0 (VMD SINGLE-FILE EDITION)
+#  Status: IEX-Ready | Auto-Elevate | Dual Window Sync
 # =========================================================
 
 $ErrorActionPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# --- [VERSION CONTROL] ---
-$AppVer   = "49.0"
-$AppDate  = "29-01-2026"
-$ConsoleTitle = "Installer Console [v$AppVer]"
+# --- [1. CONFIGURATION] ---
+# ลิ้งค์นี้สำคัญมาก! ต้องตรงกับไฟล์ที่คุณอัปโหลดขึ้น GitHub
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
+$SelfURL   = "$GitHubRaw/YToTV.ps1" 
 
-# --- [PARSE ARGUMENTS] ---
-# VMD Style Argument Parsing
-$Silent = $param -match "-Silent"
-if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
+# Parse Parameters
+param([switch]$Silent, [string]$Browser="Ask")
 
-# --- [SELF-DOWNLOAD & ADMIN CHECK] ---
-$CurrentScript = $PSCommandPath
-
-# 1. WEB LAUNCH CHECK (IEX Mode)
-if (-not $CurrentScript) {
-    $WebSource = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/YToTV.cmd"
-    $TempScript = "$env:TEMP\YToTV.cmd"
+# --- [2. SELF-DOWNLOAD (WEB MODE)] ---
+# เช็คว่ารันจาก IEX หรือไม่? (ถ้า IEX ค่า $PSScriptRoot จะว่างเปล่า)
+if (-not $PSScriptRoot) {
+    if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
+    $TempScript = "$env:TEMP\YToTV.ps1"
     
-    # ถ้า Silent ไม่ต้องโชว์ Download Text
-    if (!$Silent) { Write-Host "Downloading script..." -ForegroundColor Cyan }
-    
-    try { 
-        Invoke-WebRequest -Uri $WebSource -OutFile $TempScript -UserAgent "Mozilla/5.0" -UseBasicParsing -ErrorAction Stop 
-    } catch { 
-        if (!$Silent) { Write-Host "Download Error." -ForegroundColor Red; Start-Sleep 3 }
-        exit 
+    try {
+        (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript)
+    } catch {
+        Write-Host "[ERROR] Download Failed. Check URL: $SelfURL" -ForegroundColor Red
+        exit
     }
-    
-    # ส่งต่อ Arguments ไปยังตัว Temp
+
+    # สร้างคำสั่งส่งต่อ (Pass Arguments)
     $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$TempScript`""
     if ($Silent) { $ArgsList += " -Silent" }
     if ($Browser -ne "Ask") { $ArgsList += " -Browser $Browser" }
-    
-    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs
+
+    # สั่งรันไฟล์ที่โหลดมา (แบบซ่อนหน้าต่าง cmd ชั่วคราว) แล้วจบตัวเอง
+    Start-Process PowerShell -ArgumentList $ArgsList -WindowStyle Hidden
     exit
 }
 
-# 2. ADMIN CHECK (Offline Mode)
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # ส่งต่อ Arguments เวลาขอ Admin
-    $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$CurrentScript`""
+# --- [3. ADMIN CHECK (OFFLINE MODE)] ---
+$Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$Principal = [Security.Principal.WindowsPrincipal]$Identity
+if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    # ถ้าไม่ใช่ Admin ให้เรียกตัวเองใหม่แบบ RunAs Admin
+    $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     if ($Silent) { $ArgsList += " -Silent" }
     if ($Browser -ne "Ask") { $ArgsList += " -Browser $Browser" }
     
-    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs
+    # ส่งไม้ต่อแล้วปิดตัวทันที (ลดจำนวนหน้าต่างค้าง)
+    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs -WindowStyle Hidden
     exit
 }
 
-# --- [WIN32 API - VMD STYLE] ---
-$Win32 = Add-Type -MemberDefinition @"
+# =========================================================
+#  MAIN PROGRAM (ADMIN GRANTED)
+# =========================================================
+
+# --- [4. WIN32 API & SETUP] ---
+Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
+
+$Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-    [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
-    [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
-    [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-    [DllImport("user32.dll")] public static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
-    [DllImport("user32.dll")] public static extern bool DeleteMenu(IntPtr hMenu, uint uPosition, uint uFlags);
-"@ -Name "Win32Utils" -Namespace Win32 -PassThru
+    [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+    [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+    [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
+' -Name "Utils" -Namespace Win32 -PassThru
 
-# --- [SETUP] ---
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName PresentationFramework # For XAML
-
+# Setup Directories & Assets
 $InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
-# [ASSETS]
-$RepoMain = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
-$RepoIcons = "$RepoMain/IconFiles"
 $Assets = @{
-    "MenuIcon" = "$RepoMain/YouTube.ico" 
+    "MenuIcon" = "$GitHubRaw/YouTube.ico" 
     "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
-    "Chrome"="$RepoIcons/Chrome.ico"; "Edge"="$RepoIcons/Edge.ico"; "Brave"="$RepoIcons/Brave.ico"
-    "Vivaldi"="$RepoIcons/Vivaldi.ico"; "Yandex"="$RepoIcons/Yandex.ico"; "Chromium"="$RepoIcons/Chromium.ico"; "Thorium"="$RepoIcons/Thorium.ico"
+    "Chrome"="$GitHubRaw/IconFiles/Chrome.ico"; "Edge"="$GitHubRaw/IconFiles/Edge.ico"; 
+    "Brave"="$GitHubRaw/IconFiles/Brave.ico"; "Vivaldi"="$GitHubRaw/IconFiles/Vivaldi.ico"; 
+    "Yandex"="$GitHubRaw/IconFiles/Yandex.ico"; "Chromium"="$GitHubRaw/IconFiles/Chromium.ico"; 
+    "Thorium"="$GitHubRaw/IconFiles/Thorium.ico"
 }
 
+# Downloader Function
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ try{ (New-Object Net.WebClient).DownloadFile($U,$D) }catch{} }
     return $D
 }
 
+# Pre-load Icons
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
 $LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
-# [CONSOLE SETUP]
-$ConsoleHandle = $Win32::GetConsoleWindow()
+# --- [5. CONSOLE MANAGEMENT (THE VMD SECRET)] ---
+$ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 
 if ($Silent) {
-    [void]$Win32::ShowWindow($ConsoleHandle, 0) # Hide
+    [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null # Hide
 } else {
-    $Host.UI.RawUI.WindowTitle = "$ConsoleTitle"
-    $Host.UI.RawUI.BackgroundColor = "Black"
-    $Host.UI.RawUI.ForegroundColor = "Green"
+    # 1. Setup Colors First
+    $host.UI.RawUI.WindowTitle = "Installer Console"
+    $host.UI.RawUI.BackgroundColor = "Black"
+    $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     
-    # Calculate Position (Center Left)
+    # 2. Calculate Screen Position (Centered Pair)
     $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-    $W_Con = 500; $H = 820; $Gap = 10
-    $TotalW = ($W_Con * 2) + $Gap
-    $X_Con = ($Scr.Width - $TotalW) / 2
-    $Y = ($Scr.Height - $H) / 2
+    $W = 500; $H = 820; $Gap = 10
+    $TotalWidth = ($W * 2) + $Gap
     
-    # Apply Icon
-    if (Test-Path $ConsoleIcon) {
-        $hIcon = $Win32::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10)
-        if ($hIcon) { [void]$Win32::SendMessage($ConsoleHandle, 0x80, [IntPtr]0, $hIcon); [void]$Win32::SendMessage($ConsoleHandle, 0x80, [IntPtr]1, $hIcon) }
+    # Console X (Left), GUI X (Right)
+    $X_Con = ($Scr.Width - $TotalWidth) / 2
+    $Y_Pos = ($Scr.Height - $H) / 2
+    
+    # 3. Apply Icon
+    if(Test-Path $ConsoleIcon){ 
+        $h=[Win32.Utils]::LoadImage(0,$ConsoleIcon,1,0,0,16)
+        if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,1,$h)|Out-Null } 
     }
+
+    # 4. FORCE SHOW & MOVE (0x0040 = SWP_SHOWWINDOW)
+    # This brings the window back even if started Hidden!
+    [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X_Con, [int]$Y_Pos, [int]$W, [int]$H, 0x0040) | Out-Null
     
-    # Force Show & Move (SWP_SHOWWINDOW = 0x0040)
-    [void]$Win32::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X_Con, [int]$Y, [int]$W_Con, [int]$H, 0x0040)
-    
-    Write-Host "`n    YOUTUBE TV INSTALLER v$AppVer" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v51.0" -ForegroundColor Cyan
     Write-Host "    [INIT] Ready..." -ForegroundColor Yellow
 }
 
-# --- [BROWSER LOGIC] ---
+# --- [6. BROWSER LOGIC] ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 
@@ -154,7 +156,7 @@ function Install ($Obj) {
     if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
 
-# --- [CLI MODE] ---
+# CLI Mode Check
 if ($Browser -ne "Ask") {
     if(!$Silent){ Write-Host "[CLI] Target: $Browser" -ForegroundColor Cyan }
     foreach($b in $Browsers){
@@ -166,7 +168,7 @@ if ($Browser -ne "Ask") {
     exit
 }
 
-# --- [GUI MODE] ---
+# --- [7. GUI SETUP] ---
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
     $ImgObj=$null; $IcoPath="$InstallDir\$($b.K).ico"
@@ -174,7 +176,7 @@ $List=@(); foreach($b in $Browsers){
     if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$ImgObj}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$ImgObj}}
 }
 
-# XAML (Same as before, restored Vector)
+# XAML UI
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="YouTube TV Installer" Height="$H" Width="500" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
@@ -189,7 +191,7 @@ $List=@(); foreach($b in $Browsers){
         <Grid Grid.Row="0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Image x:Name="Logo" Grid.Column="0" Width="80" Height="80"/>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0"><TextBlock Text="YouTube TV Installer" Foreground="White" FontSize="28" FontWeight="Bold"><TextBlock.Effect><DropShadowEffect Color="#FF0000" BlurRadius="15" Opacity="0.6"/></TextBlock.Effect></TextBlock><StackPanel Orientation="Horizontal" Margin="2,5,0,0"><TextBlock Text="Developed by IT Groceries Shop &#x2665;" Foreground="#FF0000" FontSize="14" FontWeight="Bold"/></StackPanel></StackPanel></Grid>
-        <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Hidden"><StackPanel x:Name="List"/></ScrollViewer></Border>
+        <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="List"/></ScrollViewer></Border>
         <Grid Grid.Row="3" Margin="0,20,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" Grid.Column="0">
                 <Button x:Name="BF" Width="45" Height="45" Background="#1877F2" Style="{StaticResource Bn}" Margin="0,0,10,0" ToolTip="Facebook" Cursor="Hand"><TextBlock Text="f" Foreground="White" FontSize="26" FontWeight="Bold" Margin="0,-4,0,0"/></Button>
@@ -201,7 +203,7 @@ $List=@(); foreach($b in $Browsers){
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 
 # Align GUI Next to Console (VMD Logic)
-try { $Win.Left = [int]$X_Con + [int]$W_Con + [int]$Gap; $Win.Top = [int]$Y } catch {}
+try { $Win.Left = [int]$X_Con + [int]$W + [int]$Gap; $Win.Top = [int]$Y_Pos } catch {}
 
 if(Test-Path $LocalIcon){
     try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
