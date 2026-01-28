@@ -1,11 +1,7 @@
 <# :
 @echo off
-:: ✅ Code: Hybrid Script" (Polyglot) 🧬
-cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Get-Content -LiteralPath '%~f0' | Out-String | Invoke-Expression"
-goto :EOF
 :: =========================================================
-::  YOUTUBE TV INSTALLER v23.0 (LAYOUT REMASTERED)
+::  YOUTUBE TV INSTALLER v23.0 (LAYOUT REMASTERED) ♥♥♥
 ::  Engine: Tizen 9.0 | UI: Header Side-by-Side
 :: =========================================================
 title IT Groceries Shop - Console
