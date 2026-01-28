@@ -1,9 +1,9 @@
 # =========================================================
-#  YOUTUBE TV LAUNCHER v43.0 (International Final)
+#  YOUTUBE TV LAUNCHER v44.0 (Visibility Fix)
 # =========================================================
 param([switch]$Silent, [string]$Browser)
 
-# 1. Config URL (Ensure this matches your GitHub repo)
+# 1. Config URL (Must match your GitHub repo)
 $Url  = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/YToTV.cmd"
 $Dest = "$env:TEMP\YToTV.cmd"
 
@@ -13,7 +13,7 @@ try {
     Write-Host "[INIT] Downloading Core Component..." -ForegroundColor Cyan
     (New-Object System.Net.WebClient).DownloadFile($Url, $Dest)
 } catch {
-    Write-Host "[ERROR] Download Failed. Check URL or Internet Connection." -ForegroundColor Red; exit
+    Write-Host "[ERROR] Download Failed. Check URL." -ForegroundColor Red; exit
 }
 
 # 3. Prepare Arguments
@@ -21,22 +21,21 @@ $ArgsList = @()
 if ($Silent) { $ArgsList += "-Silent" }
 if ($Browser) { $ArgsList += "-Browser"; $ArgsList += $Browser }
 
-# 4. Launch Logic (FIXED: Console Visibility)
+# 4. Launch Logic (FIXED: Explicit WindowStyle)
 Write-Host "[INIT] Launching Installer..." -ForegroundColor Yellow
 
 if ($Silent) {
-    # Silent Mode: Hide everything (Launcher + Core)
+    # Silent Mode: Hide everything
     if ($ArgsList.Count -gt 0) {
         Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
     } else {
         Start-Process -FilePath $Dest -WindowStyle Hidden
     }
 } else {
-    # Normal Mode: Do NOT force hide here. Let the Core (.cmd) handle its own visibility.
-    # The .cmd header starts hidden, sets up UI, then unhides the console automatically.
+    # Normal Mode: Force NORMAL window style (Fixes "Console Disappeared" issue)
     if ($ArgsList.Count -gt 0) {
-        Start-Process -FilePath $Dest -ArgumentList $ArgsList
+        Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Normal
     } else {
-        Start-Process -FilePath $Dest
+        Start-Process -FilePath $Dest -WindowStyle Normal
     }
 }
