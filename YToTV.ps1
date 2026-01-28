@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v62.0 (STRICT FIX)
-#  Status: Title Fixed | Error Debugging | Stable
+#  YOUTUBE TV INSTALLER v62.1 (URL FIX)
+#  Status: Fix GitHub 404 (Case Sensitivity) | Logic Stable
 # =========================================================
 
 # --- [1. MANUAL ARGUMENT PARSING] ---
@@ -23,12 +23,12 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 }
 
 # --- [2. CONFIGURATION] ---
-# ตรวจสอบ URL นี้ให้เป๊ะกับ Branch ที่คุณใช้นะครับ
-$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/Branch"
+# [FIXED] ใช้ 'branch' ตัวเล็ก ให้ตรงกับ URL ที่คุณพิมพ์เรียก
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 
-# --- [3. WEB LAUNCH CHECK (DEBUG ADDED)] ---
+# --- [3. WEB LAUNCH CHECK] ---
 if (-not $PSScriptRoot -and -not $ScriptPath) {
     if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
     $TempScript = "$env:TEMP\YToTV.ps1"
@@ -36,11 +36,11 @@ if (-not $PSScriptRoot -and -not $ScriptPath) {
     try { 
         (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) 
     } catch { 
-        # เพิ่มการหยุดหน้าจอแจ้ง Error ไม่ให้หายวับ
+        # Debug Error: ถ้า URL ผิดจะแจ้งเตือนตรงนี้
         Write-Host "[ERROR] Download Failed from: $SelfURL" -ForegroundColor Red
         Write-Host "Server Message: $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "Press Enter to exit..."
-        Read-Host
+        Write-Host "Check if Branch name matches exactly (Case Sensitive)!" -ForegroundColor Gray
+        if (!$Silent) { Read-Host "Press Enter to exit..." }
         exit 
     }
 
@@ -106,8 +106,8 @@ if ($Silent) {
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
-    Write-Host "`n    YOUTUBE TV INSTALLER v62.0" -ForegroundColor Cyan
-    Write-Host "    [INIT] Loading System..." -ForegroundColor Yellow
+    Write-Host "`n    YOUTUBE TV INSTALLER v62.1" -ForegroundColor Cyan
+    Write-Host "    [INIT] System Ready..." -ForegroundColor Yellow
 }
 
 # --- Assets ---
@@ -126,7 +126,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# --- Install Logic (Global Scope) ---
+# --- Install Logic (FIXED NAMES & COMMENT) ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 
@@ -147,6 +147,7 @@ function Install-Browser {
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }
     if (!$Obj -or !$Obj.Path) { return }
 
+    # [FIX] Shortcut Name with Spaces
     $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
     $Sut = Join-Path $Desktop $ShortcutName
     
@@ -155,13 +156,15 @@ function Install-Browser {
     $s.TargetPath = "cmd.exe"
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
+    # [FIX] Comment Restored
     $s.Description = "Enjoy Youtube On TV by IT Groceries"
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
     
     if(!$Silent){ 
+        # [FIX] Pro Console
         $Label = " [+] $($Obj.N)"
-        $PadLength = 40 - $Label.Length
+        $PadLength = 35 - $Label.Length
         if($PadLength -lt 1){$PadLength=1}
         $Dots = "." * $PadLength
         
@@ -267,7 +270,7 @@ foreach ($b in $DetectedList) {
     $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
     $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; if(!$b.Inst){$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666"}; [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
-    $Chk.Tag = $b.N 
+    $Chk.Tag = $b.N # Store Name Key
     
     if($b.Inst){$Chk.IsChecked=$true}else{$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}; [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
