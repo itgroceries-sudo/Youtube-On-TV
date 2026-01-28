@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v68.0 (CORRECTED)
-#  Status: Win10 Icons Fix | Console Text Fix | UI Cleaned
+#  YOUTUBE TV INSTALLER v69.0 (RESTORATION)
+#  Status: Stable URI Images | Retro Console | Fixed Text
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
@@ -78,7 +78,7 @@ $ConsoleW_Px = [int]($BaseW * $Scale); $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $StartX_Px = ($Scr.Width - ($ConsoleW_Px * 2)) / 2; $StartY_Px = ($Scr.Height - $ConsoleH_Px) / 2
 
-# --- [6. CONSOLE SETUP] ---
+# --- [6. CONSOLE SETUP (RETRO)] ---
 $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 
 if ($Silent) {
@@ -126,7 +126,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    # [FIX] Console Header Text
+    # [FIX] Console Version Text
     Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
@@ -181,14 +181,18 @@ if ($Silent -or ($Browser -ne "Ask")) {
 #  GUI (WPF)
 # =========================================================
 
-# [FIX] Robust Image Loader (MemoryStream for Win10)
+# [FIX] Revert to Absolute URI (v58 style) - Most Stable for UI
 function Create-ImageObject ($FilePath) {
     try { 
         if(!(Test-Path $FilePath)){ return $null }
-        $Bytes = [System.IO.File]::ReadAllBytes($FilePath)
-        $Mem = New-Object System.IO.MemoryStream($Bytes, 0, $Bytes.Length)
+        $AbsPath = (Convert-Path $FilePath)
+        $Uri = New-Object Uri($AbsPath, [UriKind]::Absolute) 
         $B = New-Object System.Windows.Media.Imaging.BitmapImage
-        $B.BeginInit(); $B.StreamSource = $Mem; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
+        $B.BeginInit()
+        $B.UriSource = $Uri
+        $B.CacheOption = "OnLoad"
+        $B.EndInit()
+        $B.Freeze()
         return $B 
     } catch { return $null }
 }
