@@ -129,7 +129,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
+    Write-Host "   (V.2 Build 72 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
 }
@@ -156,7 +156,7 @@ function Install-Browser {
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
-    $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
+    $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling"
     $s.WindowStyle = 3
     $s.Description = "Enjoy Youtube On TV by IT Groceries"
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
