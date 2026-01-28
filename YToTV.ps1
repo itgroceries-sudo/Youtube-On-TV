@@ -1,5 +1,5 @@
 # =========================================================
-#  YOUTUBE TV LAUNCHER v41.0 (Fixed Args)
+#  YOUTUBE TV LAUNCHER v42.0 (Fix Args Error)
 # =========================================================
 param([switch]$Silent, [string]$Browser)
 
@@ -19,11 +19,11 @@ $ArgsList = @()
 if ($Silent) { $ArgsList += "-Silent" }
 if ($Browser) { $ArgsList += "-Browser"; $ArgsList += $Browser }
 
-# สั่งรัน (แยกกรณีชัดเจน เพื่อไม่ให้ PowerShell งง)
+# สั่งรัน (แยกกรณีชัดเจน เพื่อแก้บั๊ก ParameterBindingValidationException)
 if ($ArgsList.Count -gt 0) {
-    # กรณีมีของส่งไป
+    # กรณีมีค่าส่งไป (เช่น -Silent)
     Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
 } else {
-    # กรณีตัวเปล่า (ห้ามส่ง ArgumentList ไปเลย)
+    # กรณีตัวเปล่า (ห้ามใส่ -ArgumentList เด็ดขาด)
     Start-Process -FilePath $Dest -WindowStyle Hidden
 }
