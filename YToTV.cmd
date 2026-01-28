@@ -3,22 +3,21 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v47.0)
-#  Status: Restored & Fixed | VMD Engine
+#  YOUTUBE TV INSTALLER (CORE v48.0)
+#  Status: Adaptive Layout (Fixes Overflow on Hyper-V)
 # =========================================================
 
 # 1. PARSE PARAMETERS
 $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
-# 2. ENVIRONMENT SETUP
+# 2. SETUP
 $InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# --- [VMD STYLE] WIN32 API (CORRECTED) ---
-# Defined correctly as [Win32.Utils] to match VMD logic
+# Win32 API
 $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -27,28 +26,38 @@ $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
 ' -Name "Utils" -Namespace Win32 -PassThru
 
+# --- CALCULATE SCREEN & SIZE (ADAPTIVE) ---
+$Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea # Use WorkingArea (Exclude Taskbar)
+$W_Console = 500
+$W_GUI = 500
+$Gap = 10
+
+# คำนวณความสูง: ถ้าจอเล็กกว่า 900px ให้ใช้ความสูงจอ-100, ถ้าจอใหญ่ให้ใช้ 800px
+if ($Scr.Height -lt 900) {
+    $H = $Scr.Height - 80 
+} else {
+    $H = 800
+}
+
+# คำนวณตำแหน่ง (Center Screen)
+$TotalW = $W_Console + $W_GUI + $Gap
+$X = ($Scr.Width - $TotalW) / 2
+$Y = ($Scr.Height - $H) / 2
+
 # --- CONSOLE VISIBILITY ---
 $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 
 if ($Silent) {
-    # Silent: Stay hidden
     [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    # Normal: Force Show using VMD technique (SWP_SHOWWINDOW = 0x0040)
-    # This overrides the hidden start
-    $host.UI.RawUI.WindowTitle = "IT Groceries Shop - Console"
+    # Normal: Setup & Move Console
+    $host.UI.RawUI.WindowTitle = "Installer Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     
-    # Calc Position
-    $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-    $W = 500; $H = 820; $Gap = 10
-    $X = if ($Scr.Width) { ($Scr.Width - ($W * 2) - $Gap) / 2 } else { 100 }
-    $Y = if ($Scr.Height) { ($Scr.Height - $H) / 2 } else { 100 }
-
-    # Force Show & Move
-    [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X, [int]$Y, [int]$W, [int]$H, 0x0040) | Out-Null
+    # Force Show & Resize (SWP_SHOWWINDOW = 0x0040)
+    [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X, [int]$Y, [int]$W_Console, [int]$H, 0x0040) | Out-Null
 }
 
 # 3. ASSETS
@@ -65,21 +74,14 @@ $Assets = @{
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ 
-        try{
-            (New-Object Net.WebClient).DownloadFile($U,$D)
-            if(!$Silent){ Write-Host " [OK] Downloaded: $N" -ForegroundColor DarkGray }
-        }catch{
-            if(!$Silent){ Write-Host " [ERR] Failed: $N" -ForegroundColor Red }
-        } 
+        try{ (New-Object Net.WebClient).DownloadFile($U,$D); if(!$Silent){ Write-Host " [OK] Downloaded: $N" -ForegroundColor DarkGray } }catch{} 
     }
     return $D
 }
 
 if(!$Silent){ Write-Host "Checking Assets..." -ForegroundColor Yellow }
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
-
-$LocalIcon = "$InstallDir\MenuIcon.ico"
-$ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
+$LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
 # 4. LOGIC
 $Desktop = [Environment]::GetFolderPath("Desktop")
@@ -123,16 +125,12 @@ if ($Browser -ne "Ask") {
 #  GUI MODE
 # =========================================================
 
-# Console Icon (Correct Call)
 if(Test-Path $ConsoleIcon){ 
     $h=[Win32.Utils]::LoadImage(0,$ConsoleIcon,1,0,0,16)
-    if($h){ 
-        [Win32.Utils]::SendMessage($ConsoleHandle,0x80,0,$h) | Out-Null
-        [Win32.Utils]::SendMessage($ConsoleHandle,0x80,1,$h) | Out-Null
-    } 
+    if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,1,$h)|Out-Null } 
 }
 
-if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v47.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
+if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v48.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
 
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
@@ -141,9 +139,9 @@ $List=@(); foreach($b in $Browsers){
     if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$ImgObj}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$ImgObj}}
 }
 
-# XAML UI (Title Restored: YouTube TV Installer, Vector Icon Restored)
+# XAML UI (With Scrollbar Enabled & Dynamic Height)
 [xml]$xaml = @"
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="YouTube TV Installer" Height="$H" Width="$W" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="YouTube TV Installer" Height="$H" Width="$W_GUI" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
         <Style x:Key="Sw" TargetType="{x:Type CheckBox}"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
             <Border x:Name="T" Width="44" Height="24" Background="#3E3E3E" CornerRadius="12" Cursor="Hand"><Border x:Name="D" Width="20" Height="20" Background="White" CornerRadius="10" HorizontalAlignment="Left" Margin="2,0,0,0"><Border.RenderTransform><TranslateTransform x:Name="Tr" X="0"/></Border.RenderTransform></Border></Border>
@@ -156,7 +154,9 @@ $List=@(); foreach($b in $Browsers){
         <Grid Grid.Row="0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Image x:Name="Logo" Grid.Column="0" Width="80" Height="80"/>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0"><TextBlock Text="YouTube TV Installer" Foreground="White" FontSize="28" FontWeight="Bold"><TextBlock.Effect><DropShadowEffect Color="#FF0000" BlurRadius="15" Opacity="0.6"/></TextBlock.Effect></TextBlock><StackPanel Orientation="Horizontal" Margin="2,5,0,0"><TextBlock Text="Developed by IT Groceries Shop &#x2665;" Foreground="#FF0000" FontSize="14" FontWeight="Bold"/></StackPanel></StackPanel></Grid>
-        <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Hidden"><StackPanel x:Name="List"/></ScrollViewer></Border>
+        
+        <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="List"/></ScrollViewer></Border>
+        
         <Grid Grid.Row="3" Margin="0,20,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" Grid.Column="0">
                 <Button x:Name="BF" Width="45" Height="45" Background="#1877F2" Style="{StaticResource Bn}" Margin="0,0,10,0" ToolTip="Facebook" Cursor="Hand"><TextBlock Text="f" Foreground="White" FontSize="26" FontWeight="Bold" Margin="0,-4,0,0"/></Button>
@@ -167,8 +167,11 @@ $List=@(); foreach($b in $Browsers){
 
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 
-# Align GUI Next to Console (VMD Logic)
-try { $Win.Left = [int]$X + [int]$W + [int]$Gap; $Win.Top = [int]$Y } catch {}
+# Align GUI Next to Console (Perfectly Sync Top)
+try { 
+    $Win.Left = [int]$X + [int]$W_Console + [int]$Gap
+    $Win.Top  = [int]$Y
+} catch {}
 
 if(Test-Path $LocalIcon){
     try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
