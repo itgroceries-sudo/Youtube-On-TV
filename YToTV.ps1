@@ -24,7 +24,7 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 
 # --- [2. CONFIGURATION] ---
 # *Tip: เวลาเทส ให้แก้ตรงนี้เป็นกิ่ง /beta/ ถ้าอยากแยก Environment
-$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 
