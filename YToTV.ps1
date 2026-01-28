@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v59.0 (FINAL POLISH)
-#  Status: Shortcut Fixed | Comment Restored | DPI Sync
+#  YOUTUBE TV INSTALLER v60.0 (MILESTONE)
+#  Status: Pro Console | Distinct Shortcuts | Full Hybrid
 # =========================================================
 
 # --- [1. MANUAL ARGUMENT PARSING] ---
@@ -23,6 +23,7 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 }
 
 # --- [2. CONFIGURATION] ---
+# *Tip: เวลาเทส ให้แก้ตรงนี้เป็นกิ่ง /beta/ ถ้าอยากแยก Environment
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
@@ -101,7 +102,7 @@ if ($Silent) {
     # Force Show & Resize (Pixel-Based)
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
     
-    Write-Host "`n    YOUTUBE TV INSTALLER v59.0" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v60.0" -ForegroundColor Cyan
     Write-Host "    [INIT] DPI Scale: $Scale x" -ForegroundColor DarkGray
     Write-Host "    [INIT] Loading Assets..." -ForegroundColor Yellow
 }
@@ -122,7 +123,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# --- Install Logic (FIXED NAME & COMMENT) ---
+# --- Install Logic (PRO CONSOLE & DISTINCT NAMES) ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Browsers = @(
@@ -138,8 +139,8 @@ $Browsers = @(
 function Install ($Obj) {
     if(!$Obj.Path){return}
     
-    # 1. Fix Name: Use Full Name with spaces (e.g., "YouTube On TV - Google Chrome.lnk")
-    $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
+    # [FIX 1] Distinct Shortcut Name: "Youtube On TV - BrowserName.lnk"
+    $ShortcutName = "Youtube On TV - $($Obj.N).lnk"
     $Sut = Join-Path $Desktop $ShortcutName
     
     $Ws = New-Object -Com WScript.Shell
@@ -148,13 +149,19 @@ function Install ($Obj) {
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
     
-    # 2. Restore Comment
+    # [FIX 2] Restore Comment
     $s.Description = "Enjoy Youtube On TV by IT Groceries"
     
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
     
-    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
+    # [FIX 3] Pro Console Output
+    if(!$Silent){ 
+        # PadRight aligns the text nicely
+        $BrowserLabel = " [+] $($Obj.N)".PadRight(30, ".")
+        Write-Host "$BrowserLabel " -NoNewline -ForegroundColor White
+        Write-Host "INSTALLED" -ForegroundColor Green
+    }
 }
 
 # --- CLI Mode Check ---
@@ -170,7 +177,7 @@ if ($Silent -or ($Browser -ne "Ask")) {
 }
 
 # =========================================================
-#  GUI (WPF)
+#  GUI (WPF with Absolute Image Paths)
 # =========================================================
 
 Write-Host "    [INIT] Launching GUI..." -ForegroundColor Yellow
