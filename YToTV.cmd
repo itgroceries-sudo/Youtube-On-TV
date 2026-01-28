@@ -3,7 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v37.0)
+#  YOUTUBE TV INSTALLER (CORE v38.0)
+#  Engine: Hybrid Polyglot (VMD Architecture)
 # =========================================================
 
 # 1. PARSE PARAMETERS
@@ -107,7 +108,7 @@ try {
     [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){Write-Host "`n    YOUTUBE TV INSTALLER v37.0" -Fg Cyan; Write-Host "[INIT] Ready..."}
+if(!$Silent){Write-Host "`n    YOUTUBE TV INSTALLER v38.0" -Fg Cyan; Write-Host "[INIT] Ready..."}
 
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
@@ -122,7 +123,8 @@ $List=@(); foreach($b in $Browsers){
         <Style x:Key="Sw" TargetType="{x:Type CheckBox}"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
             <Border x:Name="T" Width="44" Height="24" Background="#3E3E3E" CornerRadius="12" Cursor="Hand"><Border x:Name="D" Width="20" Height="20" Background="White" CornerRadius="10" HorizontalAlignment="Left" Margin="2,0,0,0"><Border.RenderTransform><TranslateTransform x:Name="Tr" X="0"/></Border.RenderTransform></Border></Border>
             <ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Tr" Storyboard.TargetProperty="X" To="20" Duration="0:0:0.2"/><ColorAnimation Storyboard.TargetName="T" Storyboard.TargetProperty="Background.Color" To="#2196F3" Duration="0:0:0.2"/></Storyboard></BeginStoryboard></Trigger.EnterActions><Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Tr" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.2"/><ColorAnimation Storyboard.TargetName="T" Storyboard.TargetProperty="Background.Color" To="#3E3E3E" Duration="0:0:0.2"/></Storyboard></BeginStoryboard></Trigger.ExitActions></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger></ControlTemplate.Triggers>
-        </ControlTemplate></Setter.Value></Setter></Style>
+        </ControlTemplate></Setter.Value></Setter>
+        </Style>
         <Style x:Key="Bn" TargetType="Button"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="22"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.FontWeight="Bold"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Opacity" Value="0.8"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
     </Window.Resources>
     <Grid Margin="25"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
