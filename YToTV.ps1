@@ -3,14 +3,15 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v71.0 (ASSET VALIDATOR)
-#  Status: Auto-Fix Corrupt Icons | Cache Buster
+#  YOUTUBE TV INSTALLER v72.0 (TEMP DIR & ICON FIX)
+#  Status: Move to Temp | Win10 URI Fix | Stable
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
-$InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
+# [FIX] Move to TEMP as requested
+$InstallDir = "$env:TEMP\ITG_YToTV"
 
 # --- [2. ARGUMENTS & INIT] ---
 $Silent = $false
@@ -95,7 +96,7 @@ if ($Silent) {
     Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# --- Assets (Auto-Clean Logic) ---
+# --- Assets (Saved to TEMP) ---
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -105,16 +106,10 @@ $Assets = @{
 
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
-    
-    # [FIX] Check for Corrupted/Empty Files (< 1KB) and Delete them
-    if (Test-Path $D) {
-        if ((Get-Item $D).Length -lt 100) { 
-            Remove-Item $D -Force 
-            if(!$Silent){ Write-Host " [CLEAN]    Bad File: $N" -ForegroundColor Red }
-        }
-    }
+    # Auto-Clean corrupt files
+    if (Test-Path $D) { if ((Get-Item $D).Length -lt 100) { Remove-Item $D -Force } }
 
-    if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ 
+    if(!(Test-Path $D)){ 
         try{ (New-Object Net.WebClient).DownloadFile($U,$D)
              if(!$Silent){ Write-Host " [DOWNLOAD] OK: $N" -ForegroundColor Green }
         }catch{} 
@@ -135,7 +130,6 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    # [FIX] Version Header
     Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
@@ -190,15 +184,16 @@ if ($Silent -or ($Browser -ne "Ask")) {
 #  GUI (WPF)
 # =========================================================
 
-# [FIX] Robust Image Loader (MemoryStream) - Win10 & Win11 Compatible
+# [FIX] URI Method with Absolute Path (Win10 Friendly)
 function Load-Icon-Safe {
     param($Path)
     try { 
         if(!(Test-Path $Path)){ return $null }
-        $Bytes = [System.IO.File]::ReadAllBytes($Path)
-        $Mem = New-Object System.IO.MemoryStream($Bytes, 0, $Bytes.Length)
+        # Convert to Absolute Path explicitly
+        $AbsPath = (Resolve-Path $Path).Path
+        $Uri = New-Object Uri($AbsPath)
         $B = New-Object System.Windows.Media.Imaging.BitmapImage
-        $B.BeginInit(); $B.StreamSource = $Mem; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
+        $B.BeginInit(); $B.UriSource = $Uri; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
         return $B 
     } catch { return $null }
 }
