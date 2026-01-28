@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v57.0 (WPF DPI-SYNC)
-#  Status: WPF Restored | DPI Scaling Fix | Admin Fixed
+#  YOUTUBE TV INSTALLER v58.0 (STABLE FIXES)
+#  Status: DPI Sync | Unique Shortcuts | Robust Icons
 # =========================================================
 
 # --- [1. MANUAL ARGUMENT PARSING] ---
@@ -68,23 +68,20 @@ $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
 ' -Name "Utils" -Namespace Win32 -PassThru
 
-# --- [5. DPI & LAYOUT CALCULATION (THE FIX)] ---
-# คำนวณ Scaling Factor ของหน้าจอ (เช่น 100% = 1.0, 125% = 1.25)
+# --- [5. DPI & LAYOUT SYNC] ---
 $Graphics = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero)
 $DPI = $Graphics.DpiX
 $Graphics.Dispose()
 $Scale = $DPI / 96.0
 
-# กำหนดขนาดพื้นฐาน (WPF Units)
 $BaseW = 500
 $BaseH = 820
 $Gap = 0
 
-# แปลงเป็น Physical Pixels สำหรับ Console (เพื่อให้เท่ากับ WPF)
+# Pixel Perfect Calculation
 $ConsoleW_Px = [int]($BaseW * $Scale)
 $ConsoleH_Px = [int]($BaseH * $Scale)
 
-# คำนวณตำแหน่งกึ่งกลาง (Based on Pixels)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $TotalWidth_Px = ($ConsoleW_Px * 2) + $Gap
 $StartX_Px = ($Scr.Width - $TotalWidth_Px) / 2
@@ -101,10 +98,10 @@ if ($Silent) {
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     
-    # Force Show & Resize Console (ใช้ค่า Pixel ที่คำนวณแล้ว)
+    # Force Show & Resize (Pixel-Based)
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
     
-    Write-Host "`n    YOUTUBE TV INSTALLER v57.0" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v58.0" -ForegroundColor Cyan
     Write-Host "    [INIT] DPI Scale: $Scale x" -ForegroundColor DarkGray
     Write-Host "    [INIT] Loading Assets..." -ForegroundColor Yellow
 }
@@ -125,7 +122,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# --- Install Logic ---
+# --- Install Logic (FIXED SHORTCUT NAMES) ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Browsers = @(
@@ -137,9 +134,15 @@ $Browsers = @(
     @{N="Chromium"; E="chrome.exe"; K="Chromium"; P=@("$L\Chromium\Application\chrome.exe","$PF\Chromium\Application\chrome.exe")}
     @{N="Thorium"; E="thorium.exe"; K="Thorium"; P=@("$L\Thorium\Application\thorium.exe","$PF\Thorium\Application\thorium.exe")}
 )
+
 function Install ($Obj) {
     if(!$Obj.Path){return}
-    $Sut = Join-Path $Desktop "Youtube On TV - $($Obj.N -replace ' ','').lnk"
+    
+    # FIX: Explicit Name Formatting
+    $BrowserName = $Obj.N -replace ' ', ''
+    $ShortcutName = "YouTube On TV - $BrowserName.lnk"
+    $Sut = Join-Path $Desktop $ShortcutName
+    
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
@@ -147,7 +150,7 @@ function Install ($Obj) {
     $s.WindowStyle = 3
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
-    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
+    if(!$Silent){ Write-Host " [INSTALLED] $BrowserName" -ForegroundColor Green }
 }
 
 # --- CLI Mode Check ---
@@ -163,14 +166,29 @@ if ($Silent -or ($Browser -ne "Ask")) {
 }
 
 # =========================================================
-#  GUI (WPF RESTORED)
+#  GUI (WPF with Absolute Image Paths)
 # =========================================================
 
 Write-Host "    [INIT] Launching GUI..." -ForegroundColor Yellow
 
 $DetectedBrowsers = @()
+
+# FIX: Robust Image Loader (Win10 Friendly)
 function Create-ImageObject ($FilePath) {
-    try { if(!(Test-Path $FilePath)){return $null}; $Uri=New-Object Uri($FilePath); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$Uri; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); return $B } catch { return $null }
+    try { 
+        if(!(Test-Path $FilePath)){ return $null }
+        # Use Absolute URI
+        $AbsPath = (Convert-Path $FilePath)
+        $Uri = New-Object Uri($AbsPath, [UriKind]::Absolute) 
+        
+        $B = New-Object System.Windows.Media.Imaging.BitmapImage
+        $B.BeginInit()
+        $B.UriSource = $Uri
+        $B.CacheOption = "OnLoad"
+        $B.EndInit()
+        $B.Freeze()
+        return $B 
+    } catch { return $null }
 }
 
 foreach ($b in $Browsers) {
@@ -180,7 +198,7 @@ foreach ($b in $Browsers) {
     else { $DetectedBrowsers += @{ Name=$b.N; Path=$null; Exe=$b.E; Installed=$false; IconObj=$ReadyImage } }
 }
 
-# XAML (The Beautiful Version)
+# XAML
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
@@ -224,21 +242,12 @@ Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manua
 
 $reader = (New-Object System.Xml.XmlNodeReader $xaml); $Window = [Windows.Markup.XamlReader]::Load($reader)
 
-# Position WPF (Calculate X using Scale to match Console's Right Edge)
+# Position WPF (Based on DPI Scale to match Console)
 try { 
     $RightOfConsole_Px = $StartX_Px + $ConsoleW_Px + $Gap
-    # Note: WPF .Left uses DIUs, not Pixels. So we assume WPF handles its own scaling for position usually,
-    # but here we might need to be careful. Let's try placing it based on pixel calc converted back to DIU if needed.
-    # For now, let's trust WPF to scale the position if we give it units.
-    # Actually, simpler: Let's assume standard behavior.
-    
-    # Position WPF Right of Console
-    # We must convert the Pixel position back to DIU for WPF Window.Left
     $WPF_Left_DIU = $RightOfConsole_Px / $Scale
     $WPF_Top_DIU  = $StartY_Px / $Scale
-    
-    $Window.Left = $WPF_Left_DIU
-    $Window.Top = $WPF_Top_DIU
+    $Window.Left = $WPF_Left_DIU; $Window.Top = $WPF_Top_DIU
 } catch {}
 
 if (Test-Path $LocalIcon) { $Obj = Create-ImageObject $LocalIcon; $Window.Icon = $Obj; $Window.FindName("Logo").Source = $Obj }
