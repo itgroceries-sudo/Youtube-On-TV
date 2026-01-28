@@ -3,15 +3,15 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v41.0)
-#  Status: Stable | Offline/Online Ready
+#  YOUTUBE TV INSTALLER (CORE v42.0)
+#  Status: Stable | Fixed Icons | Smart Admin
 # =========================================================
 
 # 1. PARAMETERS
 $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
-# 2. ENVIRONMENT SETUP
+# 2. ENVIRONMENT
 $InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
@@ -52,21 +52,14 @@ $Assets = @{
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ 
-        try{
-            (New-Object Net.WebClient).DownloadFile($U,$D)
-            if(!$Silent){ Write-Host " [OK] $N" -ForegroundColor DarkGray }
-        }catch{
-            if(!$Silent){ Write-Host " [ERR] $N" -ForegroundColor Red }
-        } 
+        try{ (New-Object Net.WebClient).DownloadFile($U,$D); if(!$Silent){ Write-Host " [OK] $N" -Fg DarkGray } }catch{} 
     }
     return $D
 }
 
-if(!$Silent){ Write-Host "Checking Assets..." -ForegroundColor Yellow }
+if(!$Silent){ Write-Host "Checking Assets..." -Fg Yellow }
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
-
-$LocalIcon = "$InstallDir\MenuIcon.ico"
-$ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
+$LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
 # 4. LOGIC
 $Desktop = [Environment]::GetFolderPath("Desktop")
@@ -92,12 +85,12 @@ function Install ($Obj) {
     $s.WindowStyle = 3
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
-    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
+    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -Fg Green }
 }
 
-# --- CLI / SILENT MODE ---
+# --- CLI MODE ---
 if ($Browser -ne "Ask") {
-    if(!$Silent){ Write-Host "[CLI MODE] Target: $Browser" -ForegroundColor Cyan }
+    if(!$Silent){ Write-Host "[CLI MODE] Target: $Browser" -Fg Cyan }
     foreach($b in $Browsers){
         if($b.N -match $Browser -or $b.K -match $Browser){
             $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
@@ -111,13 +104,8 @@ if ($Browser -ne "Ask") {
 #  GUI MODE
 # =========================================================
 
-if(Test-Path $ConsoleIcon){ 
-    $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16)
-    if($h){ 
-        [Native.Win32]::SendMessage($ConsoleHandle,0x80,0,$h) | Out-Null
-        [Native.Win32]::SendMessage($ConsoleHandle,0x80,1,$h) | Out-Null
-    } 
-}
+# Console Icon
+if(Test-Path $ConsoleIcon){ $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16); if($h){ [Native.Win32]::SendMessage($ConsoleHandle,0x80,0,$h)|Out-Null; [Native.Win32]::SendMessage($ConsoleHandle,0x80,1,$h)|Out-Null } }
 
 try {
     $Scr=[Windows.Forms.Screen]::PrimaryScreen.Bounds; $W=500; $H=820; $Gap=10
@@ -125,15 +113,12 @@ try {
     [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v41.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
+if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v42.0" -Fg Cyan; Write-Host "[INIT] Ready..." }
 
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
-    $ImgObj=$null
-    $IcoPath="$InstallDir\$($b.K).ico"
-    if(Test-Path $IcoPath){
-        try{ $U=New-Object Uri($IcoPath); $Bm=New-Object System.Windows.Media.Imaging.BitmapImage; $Bm.BeginInit(); $Bm.UriSource=$U; $Bm.CacheOption="OnLoad"; $Bm.EndInit(); $Bm.Freeze(); $ImgObj=$Bm }catch{}
-    }
+    $ImgObj=$null; $IcoPath="$InstallDir\$($b.K).ico"
+    if(Test-Path $IcoPath){ try{ $U=New-Object Uri($IcoPath); $Bm=New-Object System.Windows.Media.Imaging.BitmapImage; $Bm.BeginInit(); $Bm.UriSource=$U; $Bm.CacheOption="OnLoad"; $Bm.EndInit(); $Bm.Freeze(); $ImgObj=$Bm }catch{} }
     if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$ImgObj}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$ImgObj}}
 }
 
@@ -162,8 +147,7 @@ $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]
 try{$Win.Left=[int]$X+[int]$W+[int]$Gap; $Win.Top=[int]$Y}catch{}
 
 if(Test-Path $LocalIcon){
-    try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze()
-    $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
+    try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
 }
 
 $Lst=$Win.FindName("List"); $BA=$Win.FindName("BA"); $BC=$Win.FindName("BC"); $BF=$Win.FindName("BF"); $BG=$Win.FindName("BG")
