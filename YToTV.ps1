@@ -3,11 +3,11 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v61.0 (NAME LOOKUP FIX)
-#  Status: Fixed Empty Names | Separate Shortcuts | Pro Console
+#  YOUTUBE TV INSTALLER v62.0 (STRICT FIX)
+#  Status: Title Fixed | Error Debugging | Stable
 # =========================================================
 
-# --- [1. ARGUMENTS] ---
+# --- [1. MANUAL ARGUMENT PARSING] ---
 $Silent = $false
 $Browser = "Ask"
 $ErrorActionPreference = 'SilentlyContinue'
@@ -22,19 +22,32 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
     if ($AllArgs[$i] -eq "-Browser" -and ($i + 1 -lt $AllArgs.Count)) { $Browser = $AllArgs[$i+1] }
 }
 
-# --- [2. CONFIGURATION (BRANCH)] ---
+# --- [2. CONFIGURATION] ---
+# ตรวจสอบ URL นี้ให้เป๊ะกับ Branch ที่คุณใช้นะครับ
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/Branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 
-# --- [3. WEB LAUNCH] ---
+# --- [3. WEB LAUNCH CHECK (DEBUG ADDED)] ---
 if (-not $PSScriptRoot -and -not $ScriptPath) {
-    if (!$Silent) { Write-Host "[INIT] Web Mode Detected..." -ForegroundColor Cyan }
+    if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
     $TempScript = "$env:TEMP\YToTV.ps1"
-    try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } catch { exit }
+    
+    try { 
+        (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) 
+    } catch { 
+        # เพิ่มการหยุดหน้าจอแจ้ง Error ไม่ให้หายวับ
+        Write-Host "[ERROR] Download Failed from: $SelfURL" -ForegroundColor Red
+        Write-Host "Server Message: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "Press Enter to exit..."
+        Read-Host
+        exit 
+    }
+
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$TempScript`"")
     if ($Silent) { $PassArgs += "-Silent" }
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
+
     Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
     exit
 }
@@ -72,7 +85,9 @@ $DPI = $Graphics.DpiX
 $Graphics.Dispose()
 $Scale = $DPI / 96.0
 
-$BaseW = 500; $BaseH = 820; $Gap = 0
+$BaseW = 500
+$BaseH = 820
+$Gap = 0
 $ConsoleW_Px = [int]($BaseW * $Scale)
 $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
@@ -91,7 +106,7 @@ if ($Silent) {
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
-    Write-Host "`n    YOUTUBE TV INSTALLER v61.0" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v62.0" -ForegroundColor Cyan
     Write-Host "    [INIT] Loading System..." -ForegroundColor Yellow
 }
 
@@ -127,13 +142,11 @@ $Global:Browsers = @(
 )
 
 function Install-Browser {
-    param($NameKey) # Receive only the Name Key
+    param($NameKey) 
     
-    # Lookup Object from Global Array (100% Reliable)
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }
     if (!$Obj -or !$Obj.Path) { return }
 
-    # Shortcut Creation
     $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
     $Sut = Join-Path $Desktop $ShortcutName
     
@@ -146,10 +159,8 @@ function Install-Browser {
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
     
-    # Pro Console Output
     if(!$Silent){ 
         $Label = " [+] $($Obj.N)"
-        # Calculate padding to align "INSTALLED"
         $PadLength = 40 - $Label.Length
         if($PadLength -lt 1){$PadLength=1}
         $Dots = "." * $PadLength
@@ -196,7 +207,7 @@ foreach ($b in $Global:Browsers) {
 
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
+Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
         <Style x:Key="BlueSwitch" TargetType="{x:Type CheckBox}">
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
@@ -256,7 +267,7 @@ foreach ($b in $DetectedList) {
     $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
     $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; if(!$b.Inst){$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666"}; [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
-    $Chk.Tag = $b.N # <--- FIX: Store Name String Only
+    $Chk.Tag = $b.N 
     
     if($b.Inst){$Chk.IsChecked=$true}else{$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}; [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
