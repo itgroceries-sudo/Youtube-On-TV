@@ -1,23 +1,24 @@
-<# : batch portion
+<# : batch portion (Hybrid Header)
 @powershell -noprofile -Window Hidden -c "$param='%*';$ScriptPath='%~f0';iex((Get-Content('%~f0') -Raw))"&exit/b
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v42.0)
-#  Status: Stable | Fixed Icons | Smart Admin
+#  YOUTUBE TV INSTALLER (CORE v43.0)
+#  Status: Final Release | Architecture: VMD Hybrid
 # =========================================================
 
-# 1. PARAMETERS
+# 1. PARSE PARAMETERS
 $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
-# 2. ENVIRONMENT
+# 2. ENVIRONMENT SETUP
+# Use LocalAppData for persistent icons (avoids missing icon issue)
 $InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# Win32 API
+# Win32 API (For Window Control)
 $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
@@ -26,11 +27,13 @@ $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
 ' -Name "Win32Utils" -Namespace Win32 -PassThru
 
-# Console Handling
+# Console Visibility Handling
 $ConsoleHandle = [Native.Win32]::GetConsoleWindow()
 if ($Silent) {
+    # If Silent: Ensure console stays hidden
     [Native.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
+    # If Normal: Show console and setup colors (SW_SHOW = 5)
     [Native.Win32]::ShowWindow($ConsoleHandle, 5) | Out-Null
     $host.UI.RawUI.WindowTitle = "Installer Console"
     $host.UI.RawUI.BackgroundColor = "Black"
@@ -38,7 +41,7 @@ if ($Silent) {
     Clear-Host
 }
 
-# 3. ASSETS
+# 3. ASSETS CONFIGURATION
 $RepoMain = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $RepoIcons = "$RepoMain/IconFiles"
 
@@ -49,19 +52,28 @@ $Assets = @{
     "Vivaldi"="$RepoIcons/Vivaldi.ico"; "Yandex"="$RepoIcons/Yandex.ico"; "Chromium"="$RepoIcons/Chromium.ico"; "Thorium"="$RepoIcons/Thorium.ico"
 }
 
+# Asset Downloader
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
+    # Download only if missing or empty size
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ 
-        try{ (New-Object Net.WebClient).DownloadFile($U,$D); if(!$Silent){ Write-Host " [OK] $N" -Fg DarkGray } }catch{} 
+        try{
+            (New-Object Net.WebClient).DownloadFile($U,$D)
+            if(!$Silent){ Write-Host " [OK] Downloaded: $N" -ForegroundColor DarkGray }
+        }catch{
+            if(!$Silent){ Write-Host " [ERR] Failed: $N" -ForegroundColor Red }
+        } 
     }
     return $D
 }
 
-if(!$Silent){ Write-Host "Checking Assets..." -Fg Yellow }
+if(!$Silent){ Write-Host "Checking Assets..." -ForegroundColor Yellow }
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
-$LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
-# 4. LOGIC
+$LocalIcon = "$InstallDir\MenuIcon.ico"
+$ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
+
+# 4. BROWSER LOGIC
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 
@@ -75,22 +87,26 @@ $Browsers = @(
     @{N="Thorium"; E="thorium.exe"; K="Thorium"; P=@("$L\Thorium\Application\thorium.exe","$PF\Thorium\Application\thorium.exe")}
 )
 
+# Shortcut Creator
 function Install ($Obj) {
     if(!$Obj.Path){return}
     $Sut = Join-Path $Desktop "Youtube On TV - $($Obj.N -replace ' ','').lnk"
+    
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
+    
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
+    
     $s.Save()
-    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -Fg Green }
+    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
 
-# --- CLI MODE ---
+# --- CLI / SILENT MODE CHECK ---
 if ($Browser -ne "Ask") {
-    if(!$Silent){ Write-Host "[CLI MODE] Target: $Browser" -Fg Cyan }
+    if(!$Silent){ Write-Host "[CLI MODE] Target: $Browser" -ForegroundColor Cyan }
     foreach($b in $Browsers){
         if($b.N -match $Browser -or $b.K -match $Browser){
             $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
@@ -104,25 +120,35 @@ if ($Browser -ne "Ask") {
 #  GUI MODE
 # =========================================================
 
-# Console Icon
-if(Test-Path $ConsoleIcon){ $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16); if($h){ [Native.Win32]::SendMessage($ConsoleHandle,0x80,0,$h)|Out-Null; [Native.Win32]::SendMessage($ConsoleHandle,0x80,1,$h)|Out-Null } }
+# Apply Console Icon
+if(Test-Path $ConsoleIcon){ 
+    $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16)
+    if($h){ 
+        [Native.Win32]::SendMessage($ConsoleHandle,0x80,0,$h) | Out-Null
+        [Native.Win32]::SendMessage($ConsoleHandle,0x80,1,$h) | Out-Null
+    } 
+}
 
+# Position Console Window
 try {
     $Scr=[Windows.Forms.Screen]::PrimaryScreen.Bounds; $W=500; $H=820; $Gap=10
     $X=if($Scr.Width){($Scr.Width-($W*2)-$Gap)/2}else{100}; $Y=if($Scr.Height){($Scr.Height-$H)/2}else{100}
     [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v42.0" -Fg Cyan; Write-Host "[INIT] Ready..." }
+if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v43.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
 
+# Detect Browsers & Load Icons
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
     $ImgObj=$null; $IcoPath="$InstallDir\$($b.K).ico"
-    if(Test-Path $IcoPath){ try{ $U=New-Object Uri($IcoPath); $Bm=New-Object System.Windows.Media.Imaging.BitmapImage; $Bm.BeginInit(); $Bm.UriSource=$U; $Bm.CacheOption="OnLoad"; $Bm.EndInit(); $Bm.Freeze(); $ImgObj=$Bm }catch{} }
+    if(Test-Path $IcoPath){
+        try{ $U=New-Object Uri($IcoPath); $Bm=New-Object System.Windows.Media.Imaging.BitmapImage; $Bm.BeginInit(); $Bm.UriSource=$U; $Bm.CacheOption="OnLoad"; $Bm.EndInit(); $Bm.Freeze(); $ImgObj=$Bm }catch{}
+    }
     if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$ImgObj}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$ImgObj}}
 }
 
-# XAML UI
+# XAML Interface
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="YT Installer" Height="$H" Width="$W" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
@@ -146,12 +172,14 @@ $List=@(); foreach($b in $Browsers){
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 try{$Win.Left=[int]$X+[int]$W+[int]$Gap; $Win.Top=[int]$Y}catch{}
 
+# Set Window Icon
 if(Test-Path $LocalIcon){
     try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
 }
 
 $Lst=$Win.FindName("List"); $BA=$Win.FindName("BA"); $BC=$Win.FindName("BC"); $BF=$Win.FindName("BF"); $BG=$Win.FindName("BG")
 
+# Build UI Elements
 foreach($b in $List){
     $Row=New-Object System.Windows.Controls.Grid; $Row.Height=45; $Row.Margin="0,5,0,5"
     $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -P @{Width=[System.Windows.GridLength]::Auto})); $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -P @{Width=[System.Windows.GridLength]::new(1,[System.Windows.GridUnitType]::Star)})); $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -P @{Width=[System.Windows.GridLength]::Auto}))
@@ -165,6 +193,7 @@ foreach($b in $List){
     if($b.Inst){$Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked})}
 }
 
+# Event Handlers
 $BF.Add_Click({Start-Process "https://www.facebook.com/Adm1n1straTOE"}); $BG.Add_Click({Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main"}); $BC.Add_Click({$Win.Close()})
 $BA.Add_Click({
     $Sel=$Lst.Children|Where-Object{$_.Child.Children[2].IsChecked}; if($Sel.Count -eq 0){return}
