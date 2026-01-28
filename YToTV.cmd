@@ -129,7 +129,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
+    Write-Host "   (V.2 Build 72 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
 }
