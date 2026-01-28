@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v58.0 (STABLE FIXES)
-#  Status: DPI Sync | Unique Shortcuts | Robust Icons
+#  YOUTUBE TV INSTALLER v59.0 (FINAL POLISH)
+#  Status: Shortcut Fixed | Comment Restored | DPI Sync
 # =========================================================
 
 # --- [1. MANUAL ARGUMENT PARSING] ---
@@ -101,7 +101,7 @@ if ($Silent) {
     # Force Show & Resize (Pixel-Based)
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
     
-    Write-Host "`n    YOUTUBE TV INSTALLER v58.0" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v59.0" -ForegroundColor Cyan
     Write-Host "    [INIT] DPI Scale: $Scale x" -ForegroundColor DarkGray
     Write-Host "    [INIT] Loading Assets..." -ForegroundColor Yellow
 }
@@ -122,7 +122,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# --- Install Logic (FIXED SHORTCUT NAMES) ---
+# --- Install Logic (FIXED NAME & COMMENT) ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Browsers = @(
@@ -138,9 +138,8 @@ $Browsers = @(
 function Install ($Obj) {
     if(!$Obj.Path){return}
     
-    # FIX: Explicit Name Formatting
-    $BrowserName = $Obj.N -replace ' ', ''
-    $ShortcutName = "YouTube On TV - $BrowserName.lnk"
+    # 1. Fix Name: Use Full Name with spaces (e.g., "YouTube On TV - Google Chrome.lnk")
+    $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
     $Sut = Join-Path $Desktop $ShortcutName
     
     $Ws = New-Object -Com WScript.Shell
@@ -148,9 +147,14 @@ function Install ($Obj) {
     $s.TargetPath = "cmd.exe"
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
+    
+    # 2. Restore Comment
+    $s.Description = "Enjoy Youtube On TV by IT Groceries"
+    
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
-    if(!$Silent){ Write-Host " [INSTALLED] $BrowserName" -ForegroundColor Green }
+    
+    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
 
 # --- CLI Mode Check ---
@@ -166,27 +170,21 @@ if ($Silent -or ($Browser -ne "Ask")) {
 }
 
 # =========================================================
-#  GUI (WPF with Absolute Image Paths)
+#  GUI (WPF)
 # =========================================================
 
 Write-Host "    [INIT] Launching GUI..." -ForegroundColor Yellow
 
 $DetectedBrowsers = @()
 
-# FIX: Robust Image Loader (Win10 Friendly)
+# Robust Image Loader
 function Create-ImageObject ($FilePath) {
     try { 
         if(!(Test-Path $FilePath)){ return $null }
-        # Use Absolute URI
         $AbsPath = (Convert-Path $FilePath)
         $Uri = New-Object Uri($AbsPath, [UriKind]::Absolute) 
-        
         $B = New-Object System.Windows.Media.Imaging.BitmapImage
-        $B.BeginInit()
-        $B.UriSource = $Uri
-        $B.CacheOption = "OnLoad"
-        $B.EndInit()
-        $B.Freeze()
+        $B.BeginInit(); $B.UriSource = $Uri; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
         return $B 
     } catch { return $null }
 }
@@ -242,7 +240,7 @@ Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manua
 
 $reader = (New-Object System.Xml.XmlNodeReader $xaml); $Window = [Windows.Markup.XamlReader]::Load($reader)
 
-# Position WPF (Based on DPI Scale to match Console)
+# Position WPF (Scaled to match Console)
 try { 
     $RightOfConsole_Px = $StartX_Px + $ConsoleW_Px + $Gap
     $WPF_Left_DIU = $RightOfConsole_Px / $Scale
