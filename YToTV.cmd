@@ -3,42 +3,41 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE)
-#  Architecture: Hybrid Polyglot (VMD Style)
+#  YOUTUBE TV INSTALLER (CORE v37.0)
 # =========================================================
 
-# 1. PARSE PARAMETERS (From Batch Wrapper)
+# 1. PARSE PARAMETERS
 $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
-# 2. CHECK ADMIN (Force Elevation if run directly)
+# 2. CHECK ADMIN (Force Elevation)
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $IsAdmin) {
     Start-Process -FilePath $ScriptPath -ArgumentList $param -Verb RunAs
     exit
 }
 
-# 3. ENVIRONMENT SETUP
+# 3. SETUP
 $TempDir = "$env:TEMP\YT_Installer_Assets"
 if (-not (Test-Path $TempDir)) { New-Item -ItemType Directory -Force -Path $TempDir | Out-Null }
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# Win32 API (Window Control)
-$Win32 = Add-Type -MemberDefinition '
+# Win32 API
+Add-Type -Name Win32 -Namespace Native -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
     [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
-' -Name "Win32Utils" -Namespace Win32 -PassThru
+'
 
 # Console Logic
-$ConsoleHandle = $Win32::GetConsoleWindow()
+$ConsoleHandle = [Native.Win32]::GetConsoleWindow()
 if ($Silent) {
-    $Win32::ShowWindow($ConsoleHandle, 0) | Out-Null # Hide Console
+    [Native.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    $Win32::ShowWindow($ConsoleHandle, 5) | Out-Null # Show Console
+    [Native.Win32]::ShowWindow($ConsoleHandle, 5) | Out-Null
     $host.UI.RawUI.WindowTitle = "Installer Log Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Green"
@@ -61,7 +60,7 @@ if(!$Silent){Write-Host "Checking Assets..." -Fg Yellow}
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" }
 $LocalIcon = "$TempDir\MenuIcon.ico"; $ConsoleIcon = "$TempDir\ConsoleIcon.ico"
 
-# 5. BROWSER & INSTALL LOGIC
+# 5. LOGIC
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Browsers = @(
@@ -87,7 +86,7 @@ function Install ($Obj) {
     if(!$Silent){Write-Host " [INSTALLED] $($Obj.N)" -Fg Green}
 }
 
-# --- CLI MODE ---
+# CLI CHECK
 if ($Browser -ne "Ask") {
     if(!$Silent){Write-Host "[CLI MODE] Target: $Browser" -Fg Cyan}
     foreach($b in $Browsers){
@@ -99,25 +98,24 @@ if ($Browser -ne "Ask") {
     exit
 }
 
-# 6. GUI MODE (Manual Build)
-if(Test-Path $ConsoleIcon){ $h=$Win32::LoadImage(0,$ConsoleIcon,1,0,0,16); if($h){$Win32::SendMessage($ConsoleHandle,0x80,0,$h);$Win32::SendMessage($ConsoleHandle,0x80,1,$h)} }
+# GUI SETUP
+if(Test-Path $ConsoleIcon){ $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16); if($h){[Native.Win32]::SendMessage($ConsoleHandle,0x80,0,$h);[Native.Win32]::SendMessage($ConsoleHandle,0x80,1,$h)} }
 
 try {
     $Scr=[Windows.Forms.Screen]::PrimaryScreen.Bounds; $W=500; $H=820; $Gap=10
     $X=if($Scr.Width){($Scr.Width-($W*2)-$Gap)/2}else{100}; $Y=if($Scr.Height){($Scr.Height-$H)/2}else{100}
-    $Win32::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
+    [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){Write-Host "`n    YOUTUBE TV INSTALLER v36.0 (FINAL)" -Fg Cyan; Write-Host "[INIT] Ready..."}
+if(!$Silent){Write-Host "`n    YOUTUBE TV INSTALLER v37.0" -Fg Cyan; Write-Host "[INIT] Ready..."}
 
-# Prepare List
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
     $Uri=New-Object Uri("$TempDir\$($b.K).ico"); $Bmp=New-Object System.Windows.Media.Imaging.BitmapImage; $Bmp.BeginInit(); $Bmp.UriSource=$Uri; $Bmp.CacheOption="OnLoad"; $Bmp.EndInit(); $Bmp.Freeze()
     if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$Bmp}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$Bmp}}
 }
 
-# XAML
+# XAML UI
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="YT Installer" Height="$H" Width="$W" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
@@ -139,6 +137,7 @@ $List=@(); foreach($b in $Browsers){
 
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 try{$Win.Left=[int]$X+[int]$W+[int]$Gap; $Win.Top=[int]$Y}catch{}
+function Create-ImageObject ($FilePath) {try{if(!(Test-Path $FilePath)){return $null};$U=New-Object Uri($FilePath);$B=New-Object System.Windows.Media.Imaging.BitmapImage;$B.BeginInit();$B.UriSource=$U;$B.CacheOption="OnLoad";$B.EndInit();$B.Freeze();return $B}catch{return $null}}
 if(Test-Path $LocalIcon){$O=Create-ImageObject $LocalIcon; $Win.Icon=$O; $Win.FindName("Logo").Source=$O}
 
 $Lst=$Win.FindName("List"); $BA=$Win.FindName("BA"); $BC=$Win.FindName("BC"); $BF=$Win.FindName("BF"); $BG=$Win.FindName("BG")
