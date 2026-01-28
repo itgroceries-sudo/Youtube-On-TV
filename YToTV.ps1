@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v66.0 (SYNTAX HOTFIX)
-#  Status: Fix ParserError | Stable Logic | No Extra Changes
+#  YOUTUBE TV INSTALLER v67.0 (VERSION BUMP)
+#  Status: UI Version Updated to V.2 Build 22
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
@@ -126,7 +126,8 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host "   YOUTUBE TV INSTALLER v66.0             " -ForegroundColor Green
+    # [FIX] Update Console Version
+    Write-Host "   YOUTUBE TV INSTALLER V.2 Build 22      " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
 }
@@ -227,7 +228,7 @@ Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocatio
             <Image x:Name="Logo" Grid.Column="0" Width="80" Height="80"/>
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="20,0,0,0">
                 <TextBlock Text="YouTube TV Installer" Foreground="White" FontSize="28" FontWeight="Bold"><TextBlock.Effect><DropShadowEffect Color="#FF0000" BlurRadius="15" Opacity="0.6"/></TextBlock.Effect></TextBlock>
-                <StackPanel Orientation="Horizontal" Margin="2,5,0,0"><TextBlock Text="Developed by IT Groceries Shop &#x2665;" Foreground="#FF0000" FontSize="14" FontWeight="Bold"/></StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="2,5,0,0"><TextBlock Text="Developed by IT Groceries Shop &#x2665; (V.2 Build 22 : 29-1-2025)" Foreground="#FF0000" FontSize="14" FontWeight="Bold"/></StackPanel>
             </StackPanel>
         </Grid>
         <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Hidden"><StackPanel x:Name="List"/></ScrollViewer></Border>
@@ -270,11 +271,11 @@ foreach ($b in $DetectedList) {
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
     $Chk.Tag = $b.N 
     
-    if($b.Inst){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
+    if($b.Path){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
     [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
     [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
-    if($b.Inst){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
+    if($b.Path){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
 }
 
 $BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); $BC.Add_Click({ $Window.Close() })
