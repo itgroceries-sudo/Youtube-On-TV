@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v40.0)
-#  Fixes: Permissions, Persistent Icons, URLs
+#  YOUTUBE TV INSTALLER (CORE v41.0)
+#  Status: Stable | Offline/Online Ready
 # =========================================================
 
 # 1. PARAMETERS
@@ -12,13 +12,12 @@ $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
 # 2. ENVIRONMENT SETUP
-# ใช้ LocalAppData แทน Temp เพื่อให้ไอคอนอยู่ถาวร (แก้ปัญหาไอคอนเป็นรูป cmd)
 $InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# Win32 API (Window Control)
+# Win32 API
 $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
@@ -30,32 +29,28 @@ $Win32 = Add-Type -MemberDefinition '
 # Console Handling
 $ConsoleHandle = [Native.Win32]::GetConsoleWindow()
 if ($Silent) {
-    [Native.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null # ซ่อนมิด
+    [Native.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    [Native.Win32]::ShowWindow($ConsoleHandle, 5) | Out-Null # โชว์ปกติ
+    [Native.Win32]::ShowWindow($ConsoleHandle, 5) | Out-Null
     $host.UI.RawUI.WindowTitle = "Installer Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
 }
 
-# 3. ASSETS (Correct URLs & Persistent Storage)
+# 3. ASSETS
 $RepoMain = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $RepoIcons = "$RepoMain/IconFiles"
 
 $Assets = @{
-    # แก้ URL: YouTube.ico อยู่หน้า Main (ตามที่คุณแจ้ง)
     "MenuIcon" = "$RepoMain/YouTube.ico" 
     "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
-    
-    # Browser Icons อยู่ในโฟลเดอร์ IconFiles
     "Chrome"="$RepoIcons/Chrome.ico"; "Edge"="$RepoIcons/Edge.ico"; "Brave"="$RepoIcons/Brave.ico"
     "Vivaldi"="$RepoIcons/Vivaldi.ico"; "Yandex"="$RepoIcons/Yandex.ico"; "Chromium"="$RepoIcons/Chromium.ico"; "Thorium"="$RepoIcons/Thorium.ico"
 }
 
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
-    # โหลดใหม่ถ้ายังไม่มี หรือขนาดเป็น 0
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ 
         try{
             (New-Object Net.WebClient).DownloadFile($U,$D)
@@ -75,7 +70,6 @@ $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
 # 4. LOGIC
 $Desktop = [Environment]::GetFolderPath("Desktop")
-# ใช้ Environment Variable ปกติ ไม่ต้อง hardcode path (รองรับทุก User)
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 
 $Browsers = @(
@@ -91,18 +85,12 @@ $Browsers = @(
 function Install ($Obj) {
     if(!$Obj.Path){return}
     $Sut = Join-Path $Desktop "Youtube On TV - $($Obj.N -replace ' ','').lnk"
-    
-    # สร้าง Shortcut
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
-    # ไม่ต้องมี Admin ก็ใช้ taskkill กับ process ของ user ตัวเองได้
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
-    
-    # ชี้ Icon ไปที่ AppData (ถาวร)
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
-    
     $s.Save()
     if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
@@ -123,7 +111,6 @@ if ($Browser -ne "Ask") {
 #  GUI MODE
 # =========================================================
 
-# Console Icon
 if(Test-Path $ConsoleIcon){ 
     $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16)
     if($h){ 
@@ -138,12 +125,10 @@ try {
     [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v40.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
+if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v41.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
 
-# Prepare List
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
-    # Safe Image Loader
     $ImgObj=$null
     $IcoPath="$InstallDir\$($b.K).ico"
     if(Test-Path $IcoPath){
@@ -176,7 +161,6 @@ $List=@(); foreach($b in $Browsers){
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 try{$Win.Left=[int]$X+[int]$W+[int]$Gap; $Win.Top=[int]$Y}catch{}
 
-# Safe Window Icon Loader
 if(Test-Path $LocalIcon){
     try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze()
     $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
@@ -204,4 +188,3 @@ $BA.Add_Click({
     $BA.Content="Finished"; [Console]::Beep(1000,200); Start-Sleep 2; $BA.IsEnabled=$true; $BA.Content="Start Install"
 })
 $Win.ShowDialog()|Out-Null
-# ไม่ลบ Temp (InstallDir) เพราะเราต้องการให้ไอคอนอยู่ถาวร
