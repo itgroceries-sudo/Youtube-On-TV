@@ -3,63 +3,80 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER (CORE v38.0)
-#  Engine: Hybrid Polyglot (VMD Architecture)
+#  YOUTUBE TV INSTALLER (CORE v39.0)
+#  Status: Polished | Icons Fixed | Console Cleaned
 # =========================================================
 
 # 1. PARSE PARAMETERS
 $Silent = $param -match "-Silent"
 if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
-# 2. CHECK ADMIN (Force Elevation)
+# 2. CHECK ADMIN
 $IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $IsAdmin) {
-    Start-Process -FilePath $ScriptPath -ArgumentList $param -Verb RunAs
+    Start-Process -FilePath $ScriptPath -ArgumentList $param -Verb RunAs -WindowStyle Hidden
     exit
 }
 
-# 3. SETUP
+# 3. SETUP & API
 $TempDir = "$env:TEMP\YT_Installer_Assets"
 if (-not (Test-Path $TempDir)) { New-Item -ItemType Directory -Force -Path $TempDir | Out-Null }
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# Win32 API
-Add-Type -Name Win32 -Namespace Native -MemberDefinition '
+$Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
     [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
-'
+' -Name "Win32Utils" -Namespace Win32 -PassThru
 
-# Console Logic
-$ConsoleHandle = [Native.Win32]::GetConsoleWindow()
+# Console Management
+$ConsoleHandle = $Win32::GetConsoleWindow()
 if ($Silent) {
-    [Native.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null
+    # ถ้า Silent ซ่อน Console ให้มิด
+    $Win32::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    [Native.Win32]::ShowWindow($ConsoleHandle, 5) | Out-Null
+    # ถ้าไม่ Silent โชว์ Console และเคลียร์หน้าจอให้สวย
+    $Win32::ShowWindow($ConsoleHandle, 5) | Out-Null
     $host.UI.RawUI.WindowTitle = "Installer Log Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
 }
 
-# 4. ASSETS
+# 4. ASSETS (Clean Download)
 $BaseUrl = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles"
 $Assets = @{
-    "MenuIcon" = "$BaseUrl/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
+    "MenuIcon" = "$BaseUrl/YouTube.ico"
+    "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
     "Chrome"="$BaseUrl/Chrome.ico"; "Edge"="$BaseUrl/Edge.ico"; "Brave"="$BaseUrl/Brave.ico"
     "Vivaldi"="$BaseUrl/Vivaldi.ico"; "Yandex"="$BaseUrl/Yandex.ico"; "Chromium"="$BaseUrl/Chromium.ico"; "Thorium"="$BaseUrl/Thorium.ico"
 }
 
 function DL ($U, $N) { 
-    $D="$TempDir\$N"; if(!(Test-Path $D)){ try{(New-Object Net.WebClient).DownloadFile($U,$D); if(!$Silent){Write-Host " [OK] $N" -Fg DarkGray}}catch{} } 
+    $D="$TempDir\$N"
+    if(!(Test-Path $D)){ 
+        try{
+            (New-Object Net.WebClient).DownloadFile($U,$D)
+            if(!$Silent){ Write-Host " [OK] Downloaded: $N" -ForegroundColor DarkGray }
+        }catch{
+            if(!$Silent){ Write-Host " [ERR] Failed: $N" -ForegroundColor Red }
+        } 
+    }
+    return $D
 }
 
-if(!$Silent){Write-Host "Checking Assets..." -Fg Yellow}
-foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" }
-$LocalIcon = "$TempDir\MenuIcon.ico"; $ConsoleIcon = "$TempDir\ConsoleIcon.ico"
+if(!$Silent){ Write-Host "Checking Assets..." -ForegroundColor Yellow }
+
+# โหลด MenuIcon ก่อนเสมอ เพื่อความชัวร์
+DL $Assets["MenuIcon"] "MenuIcon.ico" | Out-Null
+$LocalIcon = "$TempDir\MenuIcon.ico"
+
+# โหลดที่เหลือ
+foreach($k in $Assets.Keys){ if($k -ne "MenuIcon") { DL $Assets[$k] "$k.ico" | Out-Null } }
+$ConsoleIcon = "$TempDir\ConsoleIcon.ico"
 
 # 5. LOGIC
 $Desktop = [Environment]::GetFolderPath("Desktop")
@@ -82,14 +99,17 @@ function Install ($Obj) {
     $s.TargetPath = "cmd.exe"
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
-    if(Test-Path $LocalIcon){$s.IconLocation=$LocalIcon}
+    
+    # FIX: บังคับใช้ไอคอน YouTube ถ้ามีไฟล์อยู่จริง
+    if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
+    
     $s.Save()
-    if(!$Silent){Write-Host " [INSTALLED] $($Obj.N)" -Fg Green}
+    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
 
 # CLI CHECK
 if ($Browser -ne "Ask") {
-    if(!$Silent){Write-Host "[CLI MODE] Target: $Browser" -Fg Cyan}
+    if(!$Silent){ Write-Host "[CLI MODE] Target: $Browser" -ForegroundColor Cyan }
     foreach($b in $Browsers){
         if($b.N -match $Browser -or $b.K -match $Browser){
             $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
@@ -99,21 +119,33 @@ if ($Browser -ne "Ask") {
     exit
 }
 
-# GUI SETUP
-if(Test-Path $ConsoleIcon){ $h=[Native.Win32]::LoadImage(0,$ConsoleIcon,1,0,0,16); if($h){[Native.Win32]::SendMessage($ConsoleHandle,0x80,0,$h);[Native.Win32]::SendMessage($ConsoleHandle,0x80,1,$h)} }
+# 6. GUI MODE
+# Apply Console Icon (Piped to null to hide numbers)
+if(Test-Path $ConsoleIcon){ 
+    $h=$Win32::LoadImage(0,$ConsoleIcon,1,0,0,16)
+    if($h){ 
+        $Win32::SendMessage($ConsoleHandle,0x80,0,$h) | Out-Null
+        $Win32::SendMessage($ConsoleHandle,0x80,1,$h) | Out-Null
+    } 
+}
 
 try {
     $Scr=[Windows.Forms.Screen]::PrimaryScreen.Bounds; $W=500; $H=820; $Gap=10
     $X=if($Scr.Width){($Scr.Width-($W*2)-$Gap)/2}else{100}; $Y=if($Scr.Height){($Scr.Height-$H)/2}else{100}
-    [Native.Win32]::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
+    $Win32::MoveWindow($ConsoleHandle, [int]$X, [int]$Y, [int]$W, [int]$H, $true) | Out-Null
 } catch {}
 
-if(!$Silent){Write-Host "`n    YOUTUBE TV INSTALLER v38.0" -Fg Cyan; Write-Host "[INIT] Ready..."}
+if(!$Silent){ Write-Host "`n    YOUTUBE TV INSTALLER v39.0" -ForegroundColor Cyan; Write-Host "[INIT] Ready..." }
 
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
-    $Uri=New-Object Uri("$TempDir\$($b.K).ico"); $Bmp=New-Object System.Windows.Media.Imaging.BitmapImage; $Bmp.BeginInit(); $Bmp.UriSource=$Uri; $Bmp.CacheOption="OnLoad"; $Bmp.EndInit(); $Bmp.Freeze()
-    if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$Bmp}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$Bmp}}
+    # Safe Image Loader
+    $ImgObj=$null
+    $IcoPath="$TempDir\$($b.K).ico"
+    if(Test-Path $IcoPath){
+        try{ $U=New-Object Uri($IcoPath); $Bm=New-Object System.Windows.Media.Imaging.BitmapImage; $Bm.BeginInit(); $Bm.UriSource=$U; $Bm.CacheOption="OnLoad"; $Bm.EndInit(); $Bm.Freeze(); $ImgObj=$Bm }catch{}
+    }
+    if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$ImgObj}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$ImgObj}}
 }
 
 # XAML UI
@@ -139,8 +171,12 @@ $List=@(); foreach($b in $Browsers){
 
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 try{$Win.Left=[int]$X+[int]$W+[int]$Gap; $Win.Top=[int]$Y}catch{}
-function Create-ImageObject ($FilePath) {try{if(!(Test-Path $FilePath)){return $null};$U=New-Object Uri($FilePath);$B=New-Object System.Windows.Media.Imaging.BitmapImage;$B.BeginInit();$B.UriSource=$U;$B.CacheOption="OnLoad";$B.EndInit();$B.Freeze();return $B}catch{return $null}}
-if(Test-Path $LocalIcon){$O=Create-ImageObject $LocalIcon; $Win.Icon=$O; $Win.FindName("Logo").Source=$O}
+
+# Safe Window Icon Loader
+if(Test-Path $LocalIcon){
+    try{ $U=New-Object Uri($LocalIcon); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$U; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze()
+    $Win.Icon=$B; $Win.FindName("Logo").Source=$B }catch{}
+}
 
 $Lst=$Win.FindName("List"); $BA=$Win.FindName("BA"); $BC=$Win.FindName("BC"); $BF=$Win.FindName("BF"); $BG=$Win.FindName("BG")
 
