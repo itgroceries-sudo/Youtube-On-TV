@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v62.1 (URL FIX)
-#  Status: Fix GitHub 404 (Case Sensitivity) | Logic Stable
+#  YOUTUBE TV INSTALLER v63.0 (TRUE SILENT)
+#  Status: No UAC on Silent | Fix Shortcut | URL Fixed
 # =========================================================
 
 # --- [1. MANUAL ARGUMENT PARSING] ---
@@ -23,7 +23,7 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 }
 
 # --- [2. CONFIGURATION] ---
-# [FIXED] ใช้ 'branch' ตัวเล็ก ให้ตรงกับ URL ที่คุณพิมพ์เรียก
+# URL ใช้ตัวเล็กตามที่คุณแจ้ง
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
@@ -36,10 +36,8 @@ if (-not $PSScriptRoot -and -not $ScriptPath) {
     try { 
         (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) 
     } catch { 
-        # Debug Error: ถ้า URL ผิดจะแจ้งเตือนตรงนี้
         Write-Host "[ERROR] Download Failed from: $SelfURL" -ForegroundColor Red
         Write-Host "Server Message: $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "Check if Branch name matches exactly (Case Sensitive)!" -ForegroundColor Gray
         if (!$Silent) { Read-Host "Press Enter to exit..." }
         exit 
     }
@@ -48,18 +46,25 @@ if (-not $PSScriptRoot -and -not $ScriptPath) {
     if ($Silent) { $PassArgs += "-Silent" }
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
 
-    Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
+    # [FIX] ถ้า Silent ไม่ต้องขอ Admin (-Verb RunAs) และซ่อนหน้าต่างทันที
+    if ($Silent) {
+        Start-Process PowerShell -ArgumentList $PassArgs -WindowStyle Hidden
+    } else {
+        Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
+    }
     exit
 }
 
 # --- [4. ADMIN CHECK] ---
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
-if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+
+# [FIX] ถ้าเป็น Silent ให้ข้ามการบังคับ Admin ไปเลย (ทำงานใน User Mode)
+if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $Target = if ($ScriptPath) { $ScriptPath } else { $PSCommandPath }
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$Target`"")
-    if ($Silent) { $PassArgs += "-Silent" }
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
+    
     Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
     exit
 }
@@ -106,7 +111,7 @@ if ($Silent) {
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
-    Write-Host "`n    YOUTUBE TV INSTALLER v62.1" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v63.0" -ForegroundColor Cyan
     Write-Host "    [INIT] System Ready..." -ForegroundColor Yellow
 }
 
@@ -126,11 +131,10 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# --- Install Logic (FIXED NAMES & COMMENT) ---
+# --- Install Logic ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 
-# Define Browsers Globally
 $Global:Browsers = @(
     @{N="Google Chrome"; E="chrome.exe"; K="Chrome"; P=@("$PF\Google\Chrome\Application\chrome.exe","$PF86\Google\Chrome\Application\chrome.exe")}
     @{N="Microsoft Edge"; E="msedge.exe"; K="Edge"; P=@("$PF86\Microsoft\Edge\Application\msedge.exe","$PF\Microsoft\Edge\Application\msedge.exe")}
@@ -147,7 +151,6 @@ function Install-Browser {
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }
     if (!$Obj -or !$Obj.Path) { return }
 
-    # [FIX] Shortcut Name with Spaces
     $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
     $Sut = Join-Path $Desktop $ShortcutName
     
@@ -156,13 +159,11 @@ function Install-Browser {
     $s.TargetPath = "cmd.exe"
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
-    # [FIX] Comment Restored
     $s.Description = "Enjoy Youtube On TV by IT Groceries"
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
     
     if(!$Silent){ 
-        # [FIX] Pro Console
         $Label = " [+] $($Obj.N)"
         $PadLength = 35 - $Label.Length
         if($PadLength -lt 1){$PadLength=1}
@@ -174,7 +175,7 @@ function Install-Browser {
     }
 }
 
-# --- CLI Mode ---
+# --- CLI Mode (Silent or Browser Arg) ---
 if ($Silent -or ($Browser -ne "Ask")) {
     if(!$Silent){ Write-Host "[CLI] Target: $Browser" -ForegroundColor Cyan }
     foreach($b in $Global:Browsers){
@@ -270,7 +271,7 @@ foreach ($b in $DetectedList) {
     $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
     $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; if(!$b.Inst){$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666"}; [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
-    $Chk.Tag = $b.N # Store Name Key
+    $Chk.Tag = $b.N 
     
     if($b.Inst){$Chk.IsChecked=$true}else{$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}; [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
