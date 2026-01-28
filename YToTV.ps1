@@ -3,23 +3,24 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v51.0 (VMD SINGLE-FILE EDITION)
-#  Status: IEX-Ready | Auto-Elevate | Dual Window Sync
+#  YOUTUBE TV INSTALLER v52.0 (VMD CLONE)
+#  Architecture: Single File .ps1 (Polyglot Hybrid)
 # =========================================================
 
 $ErrorActionPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-# --- [1. CONFIGURATION] ---
-# ลิ้งค์นี้สำคัญมาก! ต้องตรงกับไฟล์ที่คุณอัปโหลดขึ้น GitHub
+# --- [CONFIG] ---
+# ลิ้งค์นี้ต้องตรงกับไฟล์ที่คุณอัปโหลดบน GitHub เป๊ะๆ
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL   = "$GitHubRaw/YToTV.ps1" 
 
 # Parse Parameters
-param([switch]$Silent, [string]$Browser="Ask")
+if ($param -match "-Silent") { $Silent = $true }
+if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
 
-# --- [2. SELF-DOWNLOAD (WEB MODE)] ---
-# เช็คว่ารันจาก IEX หรือไม่? (ถ้า IEX ค่า $PSScriptRoot จะว่างเปล่า)
+# --- [1. SELF-DOWNLOAD (WEB IEX MODE)] ---
+# เช็คว่ารันจากไฟล์จริงหรือไม่? (ถ้ารันผ่าน IEX ค่า $PSScriptRoot จะว่างเปล่า)
 if (-not $PSScriptRoot) {
     if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
     $TempScript = "$env:TEMP\YToTV.ps1"
@@ -28,30 +29,29 @@ if (-not $PSScriptRoot) {
         (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript)
     } catch {
         Write-Host "[ERROR] Download Failed. Check URL: $SelfURL" -ForegroundColor Red
-        exit
+        Start-Sleep 3; exit
     }
 
-    # สร้างคำสั่งส่งต่อ (Pass Arguments)
+    # สร้าง Argument สำหรับส่งต่อ
     $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$TempScript`""
     if ($Silent) { $ArgsList += " -Silent" }
     if ($Browser -ne "Ask") { $ArgsList += " -Browser $Browser" }
 
-    # สั่งรันไฟล์ที่โหลดมา (แบบซ่อนหน้าต่าง cmd ชั่วคราว) แล้วจบตัวเอง
-    Start-Process PowerShell -ArgumentList $ArgsList -WindowStyle Hidden
+    # สั่งรันไฟล์ที่โหลดมา (แบบ Admin) แล้วปิดตัวนี้ทิ้งทันที
+    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs
     exit
 }
 
-# --- [3. ADMIN CHECK (OFFLINE MODE)] ---
+# --- [2. ADMIN CHECK (FILE MODE)] ---
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
 if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # ถ้าไม่ใช่ Admin ให้เรียกตัวเองใหม่แบบ RunAs Admin
+    # ถ้าไม่ใช่ Admin ให้เรียกตัวเองใหม่
     $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     if ($Silent) { $ArgsList += " -Silent" }
     if ($Browser -ne "Ask") { $ArgsList += " -Browser $Browser" }
     
-    # ส่งไม้ต่อแล้วปิดตัวทันที (ลดจำนวนหน้าต่างค้าง)
-    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs -WindowStyle Hidden
+    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs
     exit
 }
 
@@ -59,7 +59,7 @@ if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 #  MAIN PROGRAM (ADMIN GRANTED)
 # =========================================================
 
-# --- [4. WIN32 API & SETUP] ---
+# --- [3. WIN32 API & SETUP] ---
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 $Win32 = Add-Type -MemberDefinition '
@@ -68,12 +68,15 @@ $Win32 = Add-Type -MemberDefinition '
     [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
     [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+    [DllImport("user32.dll")] public static extern bool DeleteMenu(IntPtr hMenu, uint uPosition, uint uFlags);
 ' -Name "Utils" -Namespace Win32 -PassThru
 
-# Setup Directories & Assets
-$InstallDir = "$env:LOCALAPPDATA\ITG_YT_Icons"
+# Persistent Directory (แก้ปัญหา Icon หาย)
+$InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
+# Assets Config
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico" 
     "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -83,53 +86,52 @@ $Assets = @{
     "Thorium"="$GitHubRaw/IconFiles/Thorium.ico"
 }
 
-# Downloader Function
+# Downloader
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
     if(!(Test-Path $D) -or (Get-Item $D).Length -eq 0){ try{ (New-Object Net.WebClient).DownloadFile($U,$D) }catch{} }
     return $D
 }
 
-# Pre-load Icons
+# Pre-load Assets
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
 $LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 
-# --- [5. CONSOLE MANAGEMENT (THE VMD SECRET)] ---
+# --- [4. CONSOLE MANAGEMENT] ---
 $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 
 if ($Silent) {
-    [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null # Hide
+    # ถ้า Silent ซ่อน Console ไปเลย
+    [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    # 1. Setup Colors First
-    $host.UI.RawUI.WindowTitle = "Installer Console"
+    # ถ้าโหมดปกติ จัดหน้าจอให้สวยงาม
+    $host.UI.RawUI.WindowTitle = "IT Groceries Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
     
-    # 2. Calculate Screen Position (Centered Pair)
+    # คำนวณตำแหน่ง (ซ้าย-ขวา)
     $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
     $W = 500; $H = 820; $Gap = 10
     $TotalWidth = ($W * 2) + $Gap
     
-    # Console X (Left), GUI X (Right)
     $X_Con = ($Scr.Width - $TotalWidth) / 2
     $Y_Pos = ($Scr.Height - $H) / 2
     
-    # 3. Apply Icon
+    # ใส่ Icon ให้ Console
     if(Test-Path $ConsoleIcon){ 
-        $h=[Win32.Utils]::LoadImage(0,$ConsoleIcon,1,0,0,16)
-        if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,1,$h)|Out-Null } 
+        $h=[Win32.Utils]::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10)
+        if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
     }
 
-    # 4. FORCE SHOW & MOVE (0x0040 = SWP_SHOWWINDOW)
-    # This brings the window back even if started Hidden!
+    # FORCE SHOW & MOVE (ใช้ 0x0040 แบบ VMD เพื่อดีดหน้าต่างขึ้นมา)
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X_Con, [int]$Y_Pos, [int]$W, [int]$H, 0x0040) | Out-Null
     
-    Write-Host "`n    YOUTUBE TV INSTALLER v51.0" -ForegroundColor Cyan
+    Write-Host "`n    YOUTUBE TV INSTALLER v52.0" -ForegroundColor Cyan
     Write-Host "    [INIT] Ready..." -ForegroundColor Yellow
 }
 
-# --- [6. BROWSER LOGIC] ---
+# --- [5. BROWSER LOGIC] ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 
@@ -146,12 +148,17 @@ $Browsers = @(
 function Install ($Obj) {
     if(!$Obj.Path){return}
     $Sut = Join-Path $Desktop "Youtube On TV - $($Obj.N -replace ' ','').lnk"
+    
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
+    # Taskkill แบบ User Mode (ไม่ต้อง Admin ก็ปิดของตัวเองได้)
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
+    
+    # ใช้ Icon จาก AppData (ถาวร)
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
+    
     $s.Save()
     if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
@@ -168,7 +175,7 @@ if ($Browser -ne "Ask") {
     exit
 }
 
-# --- [7. GUI SETUP] ---
+# --- [6. GUI SETUP] ---
 $List=@(); foreach($b in $Browsers){
     $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
     $ImgObj=$null; $IcoPath="$InstallDir\$($b.K).ico"
@@ -176,7 +183,7 @@ $List=@(); foreach($b in $Browsers){
     if($FP){$List+=@{N=$b.N;Path=$FP;Exe=$b.E;Inst=$true;Img=$ImgObj}} else {$List+=@{N=$b.N;Path=$null;Exe=$b.E;Inst=$false;Img=$ImgObj}}
 }
 
-# XAML UI
+# XAML
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="YouTube TV Installer" Height="$H" Width="500" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
@@ -202,7 +209,7 @@ $List=@(); foreach($b in $Browsers){
 
 $r=(New-Object System.Xml.XmlNodeReader $xaml); $Win=[Windows.Markup.XamlReader]::Load($r)
 
-# Align GUI Next to Console (VMD Logic)
+# Align GUI Next to Console (ขวา)
 try { $Win.Left = [int]$X_Con + [int]$W + [int]$Gap; $Win.Top = [int]$Y_Pos } catch {}
 
 if(Test-Path $LocalIcon){
