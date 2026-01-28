@@ -3,7 +3,7 @@
 > **เปลี่ยนคอมพิวเตอร์ของคุณให้กลายเป็น Smart TV ระดับ High-End ด้วยคลิกเดียว**
 > *Developed by IT Groceries Shop*
 
-![Version](https://img.shields.io/badge/version-22.0.0-red?style=for-the-badge&logo=youtube)
+![Version](https://img.shields.io/badge/version-v2.0_Build_72_(29--1--2026)-red?style=for-the-badge&logo=youtube)
 ![Platform](https://img.shields.io/badge/platform-Windows_10%2F11-blue?style=for-the-badge&logo=windows)
 ![Tech](https://img.shields.io/badge/Powered_By-PowerShell_WPF-black?style=for-the-badge&logo=powershell)
 
