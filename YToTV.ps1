@@ -1,29 +1,42 @@
 # =========================================================
-#  YOUTUBE TV LAUNCHER v42.0 (Fix Args Error)
+#  YOUTUBE TV LAUNCHER v43.0 (International Final)
 # =========================================================
 param([switch]$Silent, [string]$Browser)
 
+# 1. Config URL (Ensure this matches your GitHub repo)
 $Url  = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/YToTV.cmd"
 $Dest = "$env:TEMP\YToTV.cmd"
 
+# 2. Download Core Component
 try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Write-Host "[INIT] Downloading..." -ForegroundColor Cyan
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    Write-Host "[INIT] Downloading Core Component..." -ForegroundColor Cyan
     (New-Object System.Net.WebClient).DownloadFile($Url, $Dest)
 } catch {
-    Write-Host "[ERROR] Download Failed." -ForegroundColor Red; exit
+    Write-Host "[ERROR] Download Failed. Check URL or Internet Connection." -ForegroundColor Red; exit
 }
 
-# เตรียม Arguments
+# 3. Prepare Arguments
 $ArgsList = @()
 if ($Silent) { $ArgsList += "-Silent" }
 if ($Browser) { $ArgsList += "-Browser"; $ArgsList += $Browser }
 
-# สั่งรัน (แยกกรณีชัดเจน เพื่อแก้บั๊ก ParameterBindingValidationException)
-if ($ArgsList.Count -gt 0) {
-    # กรณีมีค่าส่งไป (เช่น -Silent)
-    Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
+# 4. Launch Logic (FIXED: Console Visibility)
+Write-Host "[INIT] Launching Installer..." -ForegroundColor Yellow
+
+if ($Silent) {
+    # Silent Mode: Hide everything (Launcher + Core)
+    if ($ArgsList.Count -gt 0) {
+        Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
+    } else {
+        Start-Process -FilePath $Dest -WindowStyle Hidden
+    }
 } else {
-    # กรณีตัวเปล่า (ห้ามใส่ -ArgumentList เด็ดขาด)
-    Start-Process -FilePath $Dest -WindowStyle Hidden
+    # Normal Mode: Do NOT force hide here. Let the Core (.cmd) handle its own visibility.
+    # The .cmd header starts hidden, sets up UI, then unhides the console automatically.
+    if ($ArgsList.Count -gt 0) {
+        Start-Process -FilePath $Dest -ArgumentList $ArgsList
+    } else {
+        Start-Process -FilePath $Dest
+    }
 }
