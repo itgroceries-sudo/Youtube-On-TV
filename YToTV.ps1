@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v69.0 (RESTORATION)
-#  Status: Stable URI Images | Retro Console | Fixed Text
+#  YOUTUBE TV INSTALLER v70.0 (PLATINUM FIX)
+#  Status: MemoryStream Icons | Correct Header | Stable
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
@@ -78,7 +78,7 @@ $ConsoleW_Px = [int]($BaseW * $Scale); $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $StartX_Px = ($Scr.Width - ($ConsoleW_Px * 2)) / 2; $StartY_Px = ($Scr.Height - $ConsoleH_Px) / 2
 
-# --- [6. CONSOLE SETUP (RETRO)] ---
+# --- [6. CONSOLE SETUP] ---
 $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 
 if ($Silent) {
@@ -126,7 +126,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    # [FIX] Console Version Text
+    # [FIX] Console Header Corrected
     Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
@@ -181,25 +181,26 @@ if ($Silent -or ($Browser -ne "Ask")) {
 #  GUI (WPF)
 # =========================================================
 
-# [FIX] Revert to Absolute URI (v58 style) - Most Stable for UI
-function Create-ImageObject ($FilePath) {
+# [FIX] Robust Image Loader (MemoryStream) - Win10 & Win11 Compatible
+function Load-Icon-Safe {
+    param($Path)
     try { 
-        if(!(Test-Path $FilePath)){ return $null }
-        $AbsPath = (Convert-Path $FilePath)
-        $Uri = New-Object Uri($AbsPath, [UriKind]::Absolute) 
+        if(!(Test-Path $Path)){ return $null }
+        $Bytes = [System.IO.File]::ReadAllBytes($Path)
+        $Mem = New-Object System.IO.MemoryStream($Bytes, 0, $Bytes.Length)
         $B = New-Object System.Windows.Media.Imaging.BitmapImage
-        $B.BeginInit()
-        $B.UriSource = $Uri
-        $B.CacheOption = "OnLoad"
-        $B.EndInit()
-        $B.Freeze()
+        $B.BeginInit(); $B.StreamSource = $Mem; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
         return $B 
     } catch { return $null }
 }
 
+$DetectedList = @()
 foreach ($b in $Global:Browsers) {
     $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
-    $ReadyImage = Create-ImageObject "$InstallDir\$($b.K).ico"
+    
+    # Pre-load image securely
+    $ReadyImage = Load-Icon-Safe "$InstallDir\$($b.K).ico"
+    
     if ($FP) { 
         $b.Path = $FP
         if(!$Silent){ Write-Host " [FOUND]   $($b.N)" -ForegroundColor Green }
@@ -258,7 +259,7 @@ try {
     $WPF_Left_DIU = $RightOfConsole_Px / $Scale; $WPF_Top_DIU = $StartY_Px / $Scale
     $Window.Left = $WPF_Left_DIU; $Window.Top = $WPF_Top_DIU
 } catch {}
-if (Test-Path $LocalIcon) { $Obj = Create-ImageObject $LocalIcon; $Window.Icon = $Obj; $Window.FindName("Logo").Source = $Obj }
+if (Test-Path $LocalIcon) { $Obj = Load-Icon-Safe $LocalIcon; $Window.Icon = $Obj; $Window.FindName("Logo").Source = $Obj }
 
 $Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG")
 
