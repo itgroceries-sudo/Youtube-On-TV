@@ -62,35 +62,35 @@ irm bit.ly/YToTV | iex
 
 # 🔵 กลุ่มมาตรฐาน (Standard)
 
-- ### สำหรับ Microsoft Edge 
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Edge.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Microsoft Edge 
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Edge -Silent
 ```
-- ### สำหรับ Google Chrome
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chrome.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Google Chrome
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Chrome -Silent
 ```
-- ### สำหรับ Brave Browser (แนะนำ!)
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Brave.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Brave Browser (แนะนำ!)
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Brave -Silent
 ```
 
 # 🔴 กลุ่มทางเลือก (Alternative)
-- ### สำหรับ Vivaldi
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Vivaldi.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Vivaldi
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Vivaldi -Silent
 ```
-- ### สำหรับ Yandex
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Yandex.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Yandex
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Yandex -Silent
 ```
 
 # ⚪ กลุ่มโอเพนซอร์ส (Open Source)
-- ### สำหรับ Chromium
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chromium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Chromium
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Chromium -Silent
 ```
-- ### สำหรับ Thorium
+### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Thorium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> สำหรับ Thorium
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Thorium -Silent
 ```
@@ -105,24 +105,24 @@ irm bit.ly/YToTV | iex
 
 ### 1. ติ๊กเลือกเบราว์เซอร์ (Select & Create)
 เมื่อเปิดโปรแกรม:
-1.  เลือก Browser ที่คุณต้องการใช้จากเมนู **Switch**
-2.  กดปุ่ม **"Start"** เพื่อ **Create Shortcut**
+1.  เลือก *Browser* ที่คุณต้องการใช้จากเมนู `Switch`
+2.  กดปุ่ม `Start` เพื่อ `Create Shortcut`
 
-![Installer GUI](https://github.com/user-attachments/assets/dc68ea63-3947-4759-87a7-2410b7a896e1)
+![Installer GUI](https://github.com/user-attachments/assets/450e7691-4548-46b7-8cc0-c3001e8d4f11)
 
-*(รูปที่ 2: เลือก Browser แล้วกดปุ่มได้เลย)*
+*(รูปที่ 2: เลือก `Browser` แล้วกดปุ่มได้เลย)*
 
 ### 2. เสร็จสิ้น (Finish)
-โปรแกรมจะแจ้งว่า **"Success!"** ทันที (ใช้เวลาไม่ถึง 2 วินาที)
-คุณจะพบ Shortcut ชื่อ **Youtube On TV** บนหน้าจอ พร้อมไอคอนสีแดงสวยงาม
+โปรแกรมจะแจ้งว่า **`"Success!"`** ทันที (ใช้เวลาไม่ถึง 2 วินาที)
+คุณจะพบ Shortcut ชื่อ `**Youtube On TV**` บนหน้าจอ พร้อมไอคอนสีแดงสวยงาม
 
 ![Success Screen](https://github.com/user-attachments/assets/8d32015a-c794-467a-8f78-fca5dea9e49b)
 
-*(รูปที่ 3: Shortcut ถูกสร้างเรียบร้อย)*
+*(รูปที่ 3: `Shortcut` ถูกสร้างเรียบร้อย)*
 
 ![Success Screen](https://github.com/user-attachments/assets/69970f7c-e2d8-4a56-84c3-5c615e6251d0)
 
-*(รูปที่ 4: Shortcut ถูกสร้างบน Desktop)*
+*(รูปที่ 4: `Shortcut` ถูกสร้างบน `Desktop`)*
 
 
 ### 3. การเข้าใช้งาน (Launch)
@@ -132,10 +132,10 @@ irm bit.ly/YToTV | iex
 
 ![YouTube TV](https://github.com/user-attachments/assets/bf26eae8-3ef6-4ae3-8053-2c61bb6556bc)
 
-*(รูปที่ 5: หน้าจอ YouTube TV พร้อมใช้งาน)*
+*(รูปที่ 5: หน้าจอ `YouTube TV` พร้อมใช้งาน)*
 
 <br>
 
 <div align="center">
 
-**Developed with ❤️ by IT Groceries Shop**
+**Developed with ❤️ by `IT Groceries Shop`**
