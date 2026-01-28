@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v57.0 (WPF DPI-SYNC)
-#  Status: WPF Restored | DPI Scaling Fix | Admin Fixed
+#  YOUTUBE TV INSTALLER v63.0 (TRUE SILENT)
+#  Status: No UAC on Silent | Fix Shortcut | URL Fixed
 # =========================================================
 
 # --- [1. MANUAL ARGUMENT PARSING] ---
@@ -23,6 +23,7 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 }
 
 # --- [2. CONFIGURATION] ---
+# URL ใช้ตัวเล็กตามที่คุณแจ้ง
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
@@ -31,30 +32,45 @@ $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 if (-not $PSScriptRoot -and -not $ScriptPath) {
     if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
     $TempScript = "$env:TEMP\YToTV.ps1"
-    try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } catch { exit }
+    
+    try { 
+        (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) 
+    } catch { 
+        Write-Host "[ERROR] Download Failed from: $SelfURL" -ForegroundColor Red
+        Write-Host "Server Message: $($_.Exception.Message)" -ForegroundColor Yellow
+        if (!$Silent) { Read-Host "Press Enter to exit..." }
+        exit 
+    }
 
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$TempScript`"")
     if ($Silent) { $PassArgs += "-Silent" }
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
 
-    Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
+    # [FIX] ถ้า Silent ไม่ต้องขอ Admin (-Verb RunAs) และซ่อนหน้าต่างทันที
+    if ($Silent) {
+        Start-Process PowerShell -ArgumentList $PassArgs -WindowStyle Hidden
+    } else {
+        Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
+    }
     exit
 }
 
 # --- [4. ADMIN CHECK] ---
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
-if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+
+# [FIX] ถ้าเป็น Silent ให้ข้ามการบังคับ Admin ไปเลย (ทำงานใน User Mode)
+if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $Target = if ($ScriptPath) { $ScriptPath } else { $PSCommandPath }
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$Target`"")
-    if ($Silent) { $PassArgs += "-Silent" }
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
+    
     Start-Process PowerShell -ArgumentList $PassArgs -Verb RunAs
     exit
 }
 
 # =========================================================
-#  MAIN PROGRAM (ADMIN)
+#  MAIN PROGRAM
 # =========================================================
 
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
@@ -68,23 +84,17 @@ $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
 ' -Name "Utils" -Namespace Win32 -PassThru
 
-# --- [5. DPI & LAYOUT CALCULATION (THE FIX)] ---
-# คำนวณ Scaling Factor ของหน้าจอ (เช่น 100% = 1.0, 125% = 1.25)
+# --- [5. DPI & LAYOUT] ---
 $Graphics = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero)
 $DPI = $Graphics.DpiX
 $Graphics.Dispose()
 $Scale = $DPI / 96.0
 
-# กำหนดขนาดพื้นฐาน (WPF Units)
 $BaseW = 500
 $BaseH = 820
 $Gap = 0
-
-# แปลงเป็น Physical Pixels สำหรับ Console (เพื่อให้เท่ากับ WPF)
 $ConsoleW_Px = [int]($BaseW * $Scale)
 $ConsoleH_Px = [int]($BaseH * $Scale)
-
-# คำนวณตำแหน่งกึ่งกลาง (Based on Pixels)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $TotalWidth_Px = ($ConsoleW_Px * 2) + $Gap
 $StartX_Px = ($Scr.Width - $TotalWidth_Px) / 2
@@ -100,13 +110,9 @@ if ($Silent) {
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Green"
     Clear-Host
-    
-    # Force Show & Resize Console (ใช้ค่า Pixel ที่คำนวณแล้ว)
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
-    
-    Write-Host "`n    YOUTUBE TV INSTALLER v57.0" -ForegroundColor Cyan
-    Write-Host "    [INIT] DPI Scale: $Scale x" -ForegroundColor DarkGray
-    Write-Host "    [INIT] Loading Assets..." -ForegroundColor Yellow
+    Write-Host "`n    YOUTUBE TV INSTALLER v63.0" -ForegroundColor Cyan
+    Write-Host "    [INIT] System Ready..." -ForegroundColor Yellow
 }
 
 # --- Assets ---
@@ -128,7 +134,8 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Install Logic ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
-$Browsers = @(
+
+$Global:Browsers = @(
     @{N="Google Chrome"; E="chrome.exe"; K="Chrome"; P=@("$PF\Google\Chrome\Application\chrome.exe","$PF86\Google\Chrome\Application\chrome.exe")}
     @{N="Microsoft Edge"; E="msedge.exe"; K="Edge"; P=@("$PF86\Microsoft\Edge\Application\msedge.exe","$PF\Microsoft\Edge\Application\msedge.exe")}
     @{N="Brave Browser"; E="brave.exe"; K="Brave"; P=@("$PF\BraveSoftware\Brave-Browser\Application\brave.exe","$PF86\BraveSoftware\Brave-Browser\Application\brave.exe")}
@@ -137,53 +144,74 @@ $Browsers = @(
     @{N="Chromium"; E="chrome.exe"; K="Chromium"; P=@("$L\Chromium\Application\chrome.exe","$PF\Chromium\Application\chrome.exe")}
     @{N="Thorium"; E="thorium.exe"; K="Thorium"; P=@("$L\Thorium\Application\thorium.exe","$PF\Thorium\Application\thorium.exe")}
 )
-function Install ($Obj) {
-    if(!$Obj.Path){return}
-    $Sut = Join-Path $Desktop "Youtube On TV - $($Obj.N -replace ' ','').lnk"
+
+function Install-Browser {
+    param($NameKey) 
+    
+    $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }
+    if (!$Obj -or !$Obj.Path) { return }
+
+    $ShortcutName = "YouTube On TV - $($Obj.N).lnk"
+    $Sut = Join-Path $Desktop $ShortcutName
+    
     $Ws = New-Object -Com WScript.Shell
     $s = $Ws.CreateShortcut($Sut)
     $s.TargetPath = "cmd.exe"
     $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 9.0) AppleWebKit/537.36 (KHTML, like Gecko) 120.0.6099.5/9.0 TV Safari/537.36`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion"
     $s.WindowStyle = 3
+    $s.Description = "Enjoy Youtube On TV by IT Groceries"
     if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
     $s.Save()
-    if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
+    
+    if(!$Silent){ 
+        $Label = " [+] $($Obj.N)"
+        $PadLength = 35 - $Label.Length
+        if($PadLength -lt 1){$PadLength=1}
+        $Dots = "." * $PadLength
+        
+        Write-Host "$Label " -NoNewline -ForegroundColor White
+        Write-Host "$Dots " -NoNewline -ForegroundColor DarkGray
+        Write-Host "INSTALLED" -ForegroundColor Green
+    }
 }
 
-# --- CLI Mode Check ---
+# --- CLI Mode (Silent or Browser Arg) ---
 if ($Silent -or ($Browser -ne "Ask")) {
     if(!$Silent){ Write-Host "[CLI] Target: $Browser" -ForegroundColor Cyan }
-    foreach($b in $Browsers){
+    foreach($b in $Global:Browsers){
         if($b.N -match $Browser -or $b.K -match $Browser){
             $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}
-            if($FP){ $b.Path=$FP; Install $b }
+            if($FP){ $b.Path=$FP; Install-Browser $b.N }
         }
     }
     exit
 }
 
 # =========================================================
-#  GUI (WPF RESTORED)
+#  GUI (WPF)
 # =========================================================
 
 Write-Host "    [INIT] Launching GUI..." -ForegroundColor Yellow
 
-$DetectedBrowsers = @()
+$DetectedList = @()
 function Create-ImageObject ($FilePath) {
-    try { if(!(Test-Path $FilePath)){return $null}; $Uri=New-Object Uri($FilePath); $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$Uri; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); return $B } catch { return $null }
+    try { 
+        if(!(Test-Path $FilePath)){ return $null }
+        $Abs = (Convert-Path $FilePath); $Uri = New-Object Uri($Abs, [UriKind]::Absolute) 
+        $B=New-Object System.Windows.Media.Imaging.BitmapImage; $B.BeginInit(); $B.UriSource=$Uri; $B.CacheOption="OnLoad"; $B.EndInit(); $B.Freeze(); return $B 
+    } catch { return $null }
 }
 
-foreach ($b in $Browsers) {
+foreach ($b in $Global:Browsers) {
     $FoundPath = $null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FoundPath = $p; break } }
     $ReadyImage = Create-ImageObject "$InstallDir\$($b.K).ico"
-    if ($FoundPath) { $DetectedBrowsers += @{ Name=$b.N; Path=$FoundPath; Exe=$b.E; Installed=$true; IconObj=$ReadyImage } }
-    else { $DetectedBrowsers += @{ Name=$b.N; Path=$null; Exe=$b.E; Installed=$false; IconObj=$ReadyImage } }
+    if ($FoundPath) { $b.Path=$FoundPath; $DetectedList += @{ N=$b.N; Inst=$true; Img=$ReadyImage } }
+    else { $DetectedList += @{ N=$b.N; Inst=$false; Img=$ReadyImage } }
 }
 
-# XAML (The Beautiful Version)
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
+Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
         <Style x:Key="BlueSwitch" TargetType="{x:Type CheckBox}">
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
@@ -223,29 +251,16 @@ Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manua
 "@
 
 $reader = (New-Object System.Xml.XmlNodeReader $xaml); $Window = [Windows.Markup.XamlReader]::Load($reader)
-
-# Position WPF (Calculate X using Scale to match Console's Right Edge)
 try { 
     $RightOfConsole_Px = $StartX_Px + $ConsoleW_Px + $Gap
-    # Note: WPF .Left uses DIUs, not Pixels. So we assume WPF handles its own scaling for position usually,
-    # but here we might need to be careful. Let's try placing it based on pixel calc converted back to DIU if needed.
-    # For now, let's trust WPF to scale the position if we give it units.
-    # Actually, simpler: Let's assume standard behavior.
-    
-    # Position WPF Right of Console
-    # We must convert the Pixel position back to DIU for WPF Window.Left
-    $WPF_Left_DIU = $RightOfConsole_Px / $Scale
-    $WPF_Top_DIU  = $StartY_Px / $Scale
-    
-    $Window.Left = $WPF_Left_DIU
-    $Window.Top = $WPF_Top_DIU
+    $WPF_Left_DIU = $RightOfConsole_Px / $Scale; $WPF_Top_DIU = $StartY_Px / $Scale
+    $Window.Left = $WPF_Left_DIU; $Window.Top = $WPF_Top_DIU
 } catch {}
-
 if (Test-Path $LocalIcon) { $Obj = Create-ImageObject $LocalIcon; $Window.Icon = $Obj; $Window.FindName("Logo").Source = $Obj }
 
 $Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG")
 
-foreach ($b in $DetectedBrowsers) {
+foreach ($b in $DetectedList) {
     $Row = New-Object System.Windows.Controls.Grid; $Row.Height = 45; $Row.Margin = "0,5,0,5"
     $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::Auto}))
     $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)}))
@@ -253,18 +268,20 @@ foreach ($b in $DetectedBrowsers) {
     
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
     
-    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.IconObj){$Img.Source=$b.IconObj}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
-    $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.Name; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; if(!$b.Installed){$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666"}; [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
-    $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; $Chk.Tag=$b; if($b.Installed){$Chk.IsChecked=$true}else{$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}; [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
+    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($b.Img){$Img.Source=$b.Img}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
+    $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; if(!$b.Inst){$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666"}; [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
+    $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
+    $Chk.Tag = $b.N 
     
+    if($b.Inst){$Chk.IsChecked=$true}else{$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}; [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
-    if($b.Installed){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
+    if($b.Inst){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
 }
 
 $BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); $BC.Add_Click({ $Window.Close() })
 $BA.Add_Click({
     $Sel = $Stack.Children | Where-Object { $_.Child.Children[2].IsChecked }; if ($Sel.Count -eq 0) { return }
-    $BA.IsEnabled = $false; $BA.Content = "Processing..."; foreach ($i in $Sel) { Install $i.Child.Children[2].Tag }; 
+    $BA.IsEnabled = $false; $BA.Content = "Processing..."; foreach ($i in $Sel) { Install-Browser $i.Child.Children[2].Tag }; 
     $BA.Content = "Finished"; [System.Console]::Beep(1000, 200); Start-Sleep 2; $BA.IsEnabled = $true; $BA.Content = "Start Install"
 })
 
