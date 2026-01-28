@@ -3,8 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v64.0 (RETRO STYLE)
-#  Status: Console v23 Style | Win10 Icons Fixed | Branch
+#  YOUTUBE TV INSTALLER v65.0 (TITLE & LAYOUT FIX)
+#  Status: Title Fixed | Console Fit Win11 | Win10 Icons
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
@@ -28,11 +28,11 @@ for ($i = 0; $i -lt $AllArgs.Count; $i++) {
 
 # --- [3. WEB LAUNCH CHECK] ---
 if (-not $PSScriptRoot -and -not $ScriptPath) {
-    # ถ้าไม่ใช่ Silent ให้โชว์ Download Progress แบบ Console v23
     if (!$Silent) { 
-        Write-Host "==================================================" -ForegroundColor Yellow
-        Write-Host "   DOWNLOADING SCRIPT...                          " -ForegroundColor Yellow
-        Write-Host "==================================================" -ForegroundColor Yellow
+        # [FIX] Safe Length for Win11
+        Write-Host "==========================================" -ForegroundColor Yellow
+        Write-Host "   DOWNLOADING SCRIPT...                  " -ForegroundColor Yellow
+        Write-Host "==========================================" -ForegroundColor Yellow
     }
     $TempScript = "$env:TEMP\YToTV.ps1"
     try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } catch { exit }
@@ -79,25 +79,25 @@ $ConsoleW_Px = [int]($BaseW * $Scale); $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $StartX_Px = ($Scr.Width - ($ConsoleW_Px * 2)) / 2; $StartY_Px = ($Scr.Height - $ConsoleH_Px) / 2
 
-# --- [6. CONSOLE SETUP (RETRO STYLE)] ---
+# --- [6. CONSOLE SETUP] ---
 $ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
 
 if ($Silent) {
     [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null
 } else {
-    $host.UI.RawUI.WindowTitle = "Installer Log Console" # เปลี่ยนชื่อตามรูปต้นฉบับ
+    $host.UI.RawUI.WindowTitle = "Installer Log Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Gray"
     Clear-Host
     [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
     
-    # Header Style แบบ v23
-    Write-Host "==================================================" -ForegroundColor Yellow
-    Write-Host "   DOWNLOADING ASSETS...                          " -ForegroundColor Yellow
-    Write-Host "==================================================" -ForegroundColor Yellow
+    # [FIX] Adjusted width to 42 chars to prevent wrap on Win11
+    Write-Host "==========================================" -ForegroundColor Yellow
+    Write-Host "   DOWNLOADING ASSETS...                  " -ForegroundColor Yellow
+    Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# --- Assets & DL Function (Log Style) ---
+# --- Assets ---
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -127,9 +127,9 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 
 # --- Browser Logic ---
 if(!$Silent){ 
-    Write-Host "`n==================================================" -ForegroundColor Green
-    Write-Host "   YOUTUBE TV INSTALLER v64.0 (RETRO STYLE)       " -ForegroundColor Green
-    Write-Host "==================================================" -ForegroundColor Green
+    Write-Host "`n==========================================" -ForegroundColor Green
+    Write-Host "   YOUTUBE TV INSTALLER v65.0             " -ForegroundColor Green
+    Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
 }
 
@@ -145,7 +145,6 @@ $Global:Browsers = @(
     @{N="Thorium"; E="thorium.exe"; K="Thorium"; P=@("$L\Thorium\Application\thorium.exe","$PF\Thorium\Application\thorium.exe")}
 )
 
-# --- Function Install ---
 function Install-Browser {
     param($NameKey) 
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }
@@ -180,10 +179,9 @@ if ($Silent -or ($Browser -ne "Ask")) {
 }
 
 # =========================================================
-#  GUI (WPF - WIN10 COMPATIBLE MODE)
+#  GUI (WPF)
 # =========================================================
 
-# [LOGIC] Print Found Browsers
 foreach ($b in $Global:Browsers) {
     $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
     if($FP){ 
@@ -194,26 +192,21 @@ foreach ($b in $Global:Browsers) {
 
 if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
 
-# [FIX] Robust Image Loader (Stream Method for Win10)
 function Create-ImageObject ($FilePath) {
     try { 
         if(!(Test-Path $FilePath)){ return $null }
-        # อ่านไฟล์เป็น Byte Array แล้วสร้าง MemoryStream (Win10 ชอบวิธีนี้)
         $Bytes = [System.IO.File]::ReadAllBytes($FilePath)
         $Mem = New-Object System.IO.MemoryStream($Bytes, 0, $Bytes.Length)
         $B = New-Object System.Windows.Media.Imaging.BitmapImage
-        $B.BeginInit()
-        $B.StreamSource = $Mem
-        $B.CacheOption = "OnLoad"
-        $B.EndInit()
-        $B.Freeze()
+        $B.BeginInit(); $B.StreamSource = $Mem; $B.CacheOption = "OnLoad"; $B.EndInit(); $B.Freeze()
         return $B 
     } catch { return $null }
 }
 
+# [FIXED TITLE HERE]
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-Title="YT Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
+Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
     <Window.Resources>
         <Style x:Key="BlueSwitch" TargetType="{x:Type CheckBox}">
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
@@ -270,10 +263,10 @@ foreach ($b in $Global:Browsers) {
     
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
     
-    $ReadyImage = Create-ImageObject "$InstallDir\$($b.K).ico"
-    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($ReadyImage){$Img.Source=$ReadyImage}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
+    $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if($Create-ImageObject){$Img.Source=(Create-ImageObject "$InstallDir\$($b.K).ico")}; [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
     $Txt = New-Object System.Windows.Controls.TextBlock; $Txt.Text = $b.N; $Txt.Foreground="White"; $Txt.FontSize=16; $Txt.FontWeight="SemiBold"; $Txt.VerticalAlignment="Center"; $Txt.Margin="15,0,0,0"; 
-    $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; $Chk.Tag = $b.N 
+    $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
+    $Chk.Tag = $b.N 
     
     if($b.Path){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
     [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
