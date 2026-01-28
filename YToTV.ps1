@@ -1,5 +1,5 @@
 # =========================================================
-#  YOUTUBE TV LAUNCHER v40.0 (User Mode)
+#  YOUTUBE TV LAUNCHER v41.0 (Fixed Args)
 # =========================================================
 param([switch]$Silent, [string]$Browser)
 
@@ -14,10 +14,16 @@ try {
     Write-Host "[ERROR] Download Failed." -ForegroundColor Red; exit
 }
 
-# เตรียมคำสั่ง (ไม่ต้อง RunAs Admin แล้ว)
+# เตรียม Arguments
 $ArgsList = @()
 if ($Silent) { $ArgsList += "-Silent" }
 if ($Browser) { $ArgsList += "-Browser"; $ArgsList += $Browser }
 
-# สั่งรันแบบซ่อนหน้าต่าง cmd (WindowStyle Hidden)
-Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
+# สั่งรัน (แยกกรณีชัดเจน เพื่อไม่ให้ PowerShell งง)
+if ($ArgsList.Count -gt 0) {
+    # กรณีมีของส่งไป
+    Start-Process -FilePath $Dest -ArgumentList $ArgsList -WindowStyle Hidden
+} else {
+    # กรณีตัวเปล่า (ห้ามส่ง ArgumentList ไปเลย)
+    Start-Process -FilePath $Dest -WindowStyle Hidden
+}
