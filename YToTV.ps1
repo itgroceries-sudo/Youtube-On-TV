@@ -3,42 +3,39 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v54.0 (HYBRID WINFORMS)
-#  Architecture: Hybrid Header + WinForms UI + VMD Logic
+#  YOUTUBE TV INSTALLER v55.0 (HYBRID FIXED)
+#  Status: Admin Loop Fixed | Manual Arg Parsing
 # =========================================================
-
-# --- [1. PARAMETER PARSING] ---
-# Handle arguments from both Batch ($param) and PowerShell
-if ($param) {
-    if ($param -match "-Silent") { $Silent = $true }
-    if ($param -match "-Browser\s+(\w+)") { $Browser = $matches[1] } else { $Browser = "Ask" }
-} else {
-    param([switch]$Silent, [string]$Browser="Ask")
-}
 
 $ErrorActionPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+# --- [1. MANUAL ARGUMENT PARSING (NO PARAM BLOCK)] ---
+# เราใช้การแกะ String แทน param() เพื่อความเสถียรในโหมด Hybrid
+$Silent = $false
+$Browser = "Ask"
+
+if ($param) {
+    if ($param -match "-Silent") { $Silent = $true }
+    if ($param -match "-Browser\s+([^\s]+)") { $Browser = $matches[1] }
+}
 
 # --- [2. CONFIGURATION] ---
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 
-# --- [3. WEB LAUNCH (IEX) CHECK] ---
-# If running from memory (IEX), $PSScriptRoot is empty.
+# --- [3. WEB LAUNCH CHECK] ---
 if (-not $PSScriptRoot -and -not $ScriptPath) {
-    if (!$Silent) { Write-Host "[INIT] Web Mode Detected. Downloading..." -ForegroundColor Cyan }
+    if (!$Silent) { Write-Host "[INIT] Web Mode Detected..." -ForegroundColor Cyan }
     $TempScript = "$env:TEMP\YToTV.ps1"
-    
-    try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } 
-    catch { Write-Host "[ERROR] Download Failed." -ForegroundColor Red; Start-Sleep 3; exit }
+    try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } catch { exit }
 
-    # Build Arguments
-    $ArgsStr = "-NoProfile -ExecutionPolicy Bypass -File `"$TempScript`""
-    if ($Silent) { $ArgsStr += " -Silent" }
-    if ($Browser -ne "Ask") { $ArgsStr += " -Browser `"$Browser`"" }
+    $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$TempScript`""
+    if ($Silent) { $ArgsList += " -Silent" }
+    if ($Browser -ne "Ask") { $ArgsList += " -Browser $Browser" }
 
-    Start-Process PowerShell -ArgumentList $ArgsStr -Verb RunAs
+    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs
     exit
 }
 
@@ -46,28 +43,27 @@ if (-not $PSScriptRoot -and -not $ScriptPath) {
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
 if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    # If standard user, elevate.
-    $TargetScript = if ($ScriptPath) { $ScriptPath } else { $PSCommandPath }
+    # Determine correct script path
+    $Target = if ($ScriptPath) { $ScriptPath } else { $PSCommandPath }
     
-    $ArgsStr = "-NoProfile -ExecutionPolicy Bypass -File `"$TargetScript`""
-    if ($Silent) { $ArgsStr += " -Silent" }
-    if ($Browser -ne "Ask") { $ArgsStr += " -Browser `"$Browser`"" }
+    # Construct args carefully
+    $ArgsList = "-NoProfile -ExecutionPolicy Bypass -File `"$Target`""
+    if ($Silent) { $ArgsList += " -Silent" }
+    if ($Browser -ne "Ask") { $ArgsList += " -Browser $Browser" }
     
-    Start-Process PowerShell -ArgumentList $ArgsStr -Verb RunAs
+    # Elevate and Exit
+    Start-Process PowerShell -ArgumentList $ArgsList -Verb RunAs
     exit
 }
 
 # =========================================================
-#  MAIN PROGRAM (ADMIN & LOCAL)
+#  MAIN PROGRAM (ADMIN GRANTED)
 # =========================================================
-
-# --- Setup Environment ---
-if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# --- Win32 API (VMD Style) ---
+# Win32 API
 $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -76,7 +72,37 @@ $Win32 = Add-Type -MemberDefinition '
     [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);
 ' -Name "Utils" -Namespace Win32 -PassThru
 
-# --- Assets ---
+# --- [5. CONSOLE & UI PREP] ---
+# รีบโชว์ Console ก่อนเลย User จะได้รู้ว่าโปรแกรมทำงานแล้ว (ไม่เงียบหาย)
+$ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
+
+# Setup Layout
+$Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+$W = 500; $H = 750; $Gap = 0
+$TotalW = ($W * 2) + $Gap
+$X = ($Scr.Width - $TotalW) / 2
+$Y = ($Scr.Height - $H) / 2
+
+if ($Silent) {
+    [Win32.Utils]::ShowWindow($ConsoleHandle, 0) | Out-Null
+} else {
+    # 1. Setup Colors
+    $host.UI.RawUI.WindowTitle = "Installer Console"
+    $host.UI.RawUI.BackgroundColor = "Black"
+    $host.UI.RawUI.ForegroundColor = "Green"
+    Clear-Host
+    
+    # 2. Force Show & Move Console (Left)
+    # SWP_SHOWWINDOW = 0x0040 (บังคับโชว์ทันที)
+    [Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X, [int]$Y, [int]$W, [int]$H, 0x0040) | Out-Null
+    
+    Write-Host "`n    YOUTUBE TV INSTALLER v55.0" -ForegroundColor Cyan
+    Write-Host "    [INIT] Loading Assets..." -ForegroundColor Yellow
+}
+
+# --- Environment & Assets ---
+if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
+
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
     "Chrome"="$GitHubRaw/IconFiles/Chrome.ico"; "Edge"="$GitHubRaw/IconFiles/Edge.ico"; "Brave"="$GitHubRaw/IconFiles/Brave.ico"
@@ -89,6 +115,12 @@ function DL ($U, $N) {
 
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
 $LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
+
+# Update Console Icon (Now that assets are loaded)
+if(!$Silent -and (Test-Path $ConsoleIcon)){ 
+    $h=[Win32.Utils]::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10)
+    if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
+}
 
 # --- Install Logic ---
 $Desktop = [Environment]::GetFolderPath("Desktop")
@@ -117,7 +149,7 @@ function Install ($Obj) {
     if(!$Silent){ Write-Host " [INSTALLED] $($Obj.N)" -ForegroundColor Green }
 }
 
-# --- Silent / CLI Mode ---
+# --- CLI Mode Check ---
 if ($Silent -or ($Browser -ne "Ask")) {
     if(!$Silent){ Write-Host "[CLI] Target: $Browser" -ForegroundColor Cyan }
     foreach($b in $Browsers){
@@ -130,47 +162,23 @@ if ($Silent -or ($Browser -ne "Ask")) {
 }
 
 # =========================================================
-#  UI & CONSOLE SYNC (WINFORMS)
+#  GUI (WINFORMS) SETUP
 # =========================================================
 
-# 1. Console Setup
-$ConsoleHandle = [Win32.Utils]::GetConsoleWindow()
-$host.UI.RawUI.WindowTitle = "Installer Console"
-$host.UI.RawUI.BackgroundColor = "Black"
-$host.UI.RawUI.ForegroundColor = "Green"
-Clear-Host
+Write-Host "    [INIT] Launching UI..." -ForegroundColor Yellow
 
-# 2. Dimensions (Fixed for Consistency)
-$Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-$W = 500; $H = 750; $Gap = 0
-$TotalW = ($W * 2) + $Gap
-$X = ($Scr.Width - $TotalW) / 2
-$Y = ($Scr.Height - $H) / 2
-
-# 3. Position Console (Left Side)
-if(Test-Path $ConsoleIcon){ 
-    $h=[Win32.Utils]::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10)
-    if($h){ [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.Utils]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
-}
-# FORCE SHOW (SWP_SHOWWINDOW = 0x0040) - Essential for VMD logic
-[Win32.Utils]::SetWindowPos($ConsoleHandle, [IntPtr]::Zero, [int]$X, [int]$Y, [int]$W, [int]$H, 0x0040) | Out-Null
-
-Write-Host "`n    YOUTUBE TV INSTALLER v54.0" -ForegroundColor Cyan
-Write-Host "    [INIT] Ready..." -ForegroundColor Yellow
-
-# 4. Form Setup (Right Side)
 $Form = New-Object System.Windows.Forms.Form
 $Form.Text = "YouTube TV Installer"
 $Form.Size = New-Object System.Drawing.Size($W, $H)
 $Form.StartPosition = "Manual"
-$Form.Location = New-Object System.Drawing.Point(($X + $W), $Y)
+$Form.Location = New-Object System.Drawing.Point(($X + $W), $Y) # Place right of Console
 $Form.BackColor = [System.Drawing.Color]::FromArgb(24, 24, 24)
 $Form.ForeColor = "White"
 $Form.FormBorderStyle = "FixedSingle"
 $Form.MaximizeBox = $false
 if(Test-Path $LocalIcon){ $Form.Icon = New-Object System.Drawing.Icon($LocalIcon) }
 
-# UI Components
+# Header
 $LblHeader = New-Object System.Windows.Forms.Label
 $LblHeader.Text = "YouTube TV Installer"
 $LblHeader.Font = New-Object System.Drawing.Font("Segoe UI", 20, [System.Drawing.FontStyle]::Bold)
@@ -186,7 +194,7 @@ $LblSub.AutoSize = $true
 $LblSub.Location = New-Object System.Drawing.Point(22, 60)
 $Form.Controls.Add($LblSub)
 
-# Scrollable Panel
+# Panel
 $Panel = New-Object System.Windows.Forms.Panel
 $Panel.Location = New-Object System.Drawing.Point(20, 100)
 $Panel.Size = New-Object System.Drawing.Size(445, 530)
@@ -202,7 +210,6 @@ foreach($b in $Browsers){
     $PnlItem.Location = New-Object System.Drawing.Point(0, $Y_Item)
     $PnlItem.BackColor = [System.Drawing.Color]::FromArgb(40, 40, 40)
     
-    # Icon
     $Pb = New-Object System.Windows.Forms.PictureBox
     $Pb.Size = New-Object System.Drawing.Size(32, 32)
     $Pb.Location = New-Object System.Drawing.Point(10, 9)
@@ -211,7 +218,6 @@ foreach($b in $Browsers){
     if(Test-Path $IcoPath){ $Pb.Image = [System.Drawing.Image]::FromFile($IcoPath) }
     $PnlItem.Controls.Add($Pb)
     
-    # Checkbox
     $Chk = New-Object System.Windows.Forms.CheckBox
     $Chk.Text = ""
     $Chk.AutoSize = $true
@@ -220,7 +226,6 @@ foreach($b in $Browsers){
     if($FP){ $b.Path=$FP; $Chk.Checked = $true; $Chk.Cursor = "Hand" } else { $Chk.Enabled = $false; $PnlItem.Enabled = $false }
     $PnlItem.Controls.Add($Chk)
     
-    # Text
     $Lbl = New-Object System.Windows.Forms.Label
     $Lbl.Text = $b.N
     $Lbl.Font = New-Object System.Drawing.Font("Segoe UI", 11)
@@ -255,7 +260,7 @@ $BtnStart.ForeColor = "White"
 $BtnStart.Add_Click({
     $BtnStart.Enabled = $false; $BtnStart.Text = "Processing..."
     foreach($c in $Panel.Controls){
-        $cb = $c.Controls[1] 
+        $cb = $c.Controls[1]
         if($cb.Checked){ Install $cb.Tag }
     }
     $BtnStart.Text = "Finished"; Start-Sleep 1; $BtnStart.Enabled = $true; $BtnStart.Text = "Start Install"
