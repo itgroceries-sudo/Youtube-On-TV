@@ -3,10 +3,9 @@
 > **เปลี่ยนคอมพิวเตอร์ของคุณให้กลายเป็น Smart TV ระดับ High-End ด้วยคลิกเดียว**
 > *Developed by IT Groceries Shop*
 
-![Version](https://img.shields.io/badge/version-7.2.0-red?style=for-the-badge&logo=youtube)
+![Version](https://img.shields.io/badge/version-22.0.0-red?style=for-the-badge&logo=youtube)
 ![Platform](https://img.shields.io/badge/platform-Windows_10%2F11-blue?style=for-the-badge&logo=windows)
-![Tech](https://img.shields.io/badge/Powered_By-PowerShell_%2B_Batch-black?style=for-the-badge&logo=powershell)
-![Browser](https://img.shields.io/badge/Support-Brave_%7C_Chrome_%7C_Edge-0078D7?style=for-the-badge&logo=microsoft-edge)
+![Tech](https://img.shields.io/badge/Powered_By-PowerShell_WPF-black?style=for-the-badge&logo=powershell)
 
 ---
 
@@ -15,43 +14,25 @@
 เปลี่ยนหน้าเว็บ YouTube ธรรมดา ให้กลายเป็น **TV Interface (Leanback)** ที่ใช้งานง่าย สะอาดตา และรองรับการสั่งงานผ่านรีโมทหรือคีย์บอร์ดเต็มรูปแบบ พร้อมระบบ **Always-On** เล่นต่อเนื่องไม่มีสะดุด
 
 ![YouTube TV Interface](https://github.com/user-attachments/assets/4cc8993f-feab-445b-ae97-59c3443fa17b)
-*(รูปที่ 1: หน้าจอ YouTube TV Mode ที่สวยงามหลังติดตั้งเสร็จ)*
 
 ---
 
-## 🚀 เกี่ยวกับโปรเจกต์ (Introduction)
+## 🚀 ฟีเจอร์เด่น (New Features)
 
-**YouTube TV Installer** คือเครื่องมืออัจฉริยะที่จะ "ปลดล็อก" อินเทอร์เฟซแบบ **TV Mode** ให้กับคอมพิวเตอร์ของคุณ โดยการจำลอง User-Agent เป็น Smart TV รุ่นใหม่ล่าสุด (Samsung Tizen)
+* **⚡ New UI Design:** อินเทอร์เฟซแบบใหม่ (Dark Theme) สวยงาม ทันสมัย เขียนด้วย **WPF** แท้ๆ ไม่พึ่งพา Library ภายนอก
+* **📂 Auto Icon Loader:** ระบบดึงไอคอน Browser สวยๆ จาก Server อัตโนมัติ (ไม่ต้องใช้ไอคอนแตกๆ จากไฟล์ exe)
+* **🌍 7 Browsers Support:** รองรับเว็บเบราว์เซอร์ยอดนิยมถึง 7 ตัว:
 
-เหมาะอย่างยิ่งสำหรับ:
-* 🖥️ **HTPC (Home Theater PC):** ต่อคอมเข้าทีวีจอใหญ่
-* 🎮 **Mini PC / Console:** ควบคุมง่ายๆ ผ่านจอยเกม
-* ✨ **Minimalist:** คนที่ชอบความสะอาดตา ดำมืด และปุ่มใหญ่สะใจ
-
----
-
-## 💎 ฟีเจอร์เด่น (Key Features)
-
-| ฟีเจอร์ (Feature) | รายละเอียด (Description) |
-| :---- | :---- |
-| **⚡ Instant Creation** | **เร็วที่สุด!** สร้าง Shortcut ทันทีโดย **ไม่ต้องเปิด Browser** ไม่ต้องรอ User กด Install |
-| **🌍 Universal TV Mode** | ใช้มาตรฐาน User-Agent ใหม่ล่าสุดปี 2025 (**Samsung Tizen 9.0**) รองรับทั้ง **Brave**, **Chrome** และ **Edge** อย่างสมบูรณ์แบบ |
-| **⚔️ Universal Auto-Kill** | **(New!)** ทุก Shortcut จะฝังคำสั่ง **"ปิด Browser ตัวเก่า"** (Force Close) ก่อนเปิดใหม่เสมอ การันตีว่า TV Mode จะทำงานได้ 100% |
-| **🎨 Custom Icon Injection** | ดึงไอคอน YouTube สวยๆ จาก Server มาใช้โดยตรง (หมดปัญหารูปไอคอนกระดาษขาว หรือรูป Browser) |
-| **🎵 Background Play** | **(Anti-Freeze)** ฝังคำสั่งป้องกันวิดีโอหยุดเล่นเมื่อพับหน้าจอ (Minimize) หรือเปิดหน้าต่างอื่นทับ |
-
----
-
-## ⚙️ เจาะลึกหลักการทำงาน (How It Works)
-
-สคริปต์นี้ทำงานแบบ **Direct Injection** โดยไม่พึ่งพา Browser ในการสร้างไฟล์:
-
-1.  **The Selector:** ให้ผู้ใช้เลือก Browser ที่มีในเครื่อง
-2.  **The Creator:** ใช้ `WScript.Shell` สร้างไฟล์ `.lnk` (Shortcut) ที่ Desktop
-3.  **The Wrapper:** Shortcut ที่ได้จะไม่ได้เรียก Browser โดยตรง แต่จะเรียกผ่าน `CMD` เพื่อ:
-    * สั่ง `taskkill /f /im [browser].exe` เพื่อล้าง Process เก่า
-    * สั่ง `start` เปิด Browser ใหม่พร้อม Arguments (`--app`, `--user-agent` Tizen, `--disable-occlusion`)
-4.  **The Finisher:** แปะไอคอน `YouTube.ico` ที่โหลดมาจาก Cloud ลงไปที่ไฟล์
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chrome.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Google Chrome**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Edge.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Microsoft Edge**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Brave.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Brave Browser**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Vivaldi.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Vivaldi**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Yandex.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Yandex Browser**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chromium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Chromium**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Thorium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Thorium**
+ 
+* **🛠️ Manual Construction:** ระบบสร้างปุ่มด้วยมือ (Manual Build) การันตีความเสถียร 100% ไอคอนไม่หาย หน้าต่างไม่เด้ง
+* **🤖 Pre-Loader System:** ระบบตรวจสอบและดาวน์โหลดไฟล์ที่จำเป็นให้ครบก่อนเปิดโปรแกรม ป้องกันข้อผิดพลาด
 
 ---
 
@@ -78,33 +59,40 @@ irm bit.ly/YToTV | iex
 > **เหมาะสำหรับ:** ช่างคอม, แอดมิน, หรือสคริปต์ติดตั้ง Windows อัตโนมัติ
 >> **Autounattend.xml:** สำหรับงานติดตั้ง Windows แบบอัตโนมัติ
 >>> *คำสั่งเหล่านี้จะลงให้ทันที โดยไม่ถาม และไม่มีหน้าต่างเด้งขึ้นมาตอนจบ*
-### 🔵 สำหรับ Microsoft Edge (แนะนำ!)
+
+# 🔵 กลุ่มมาตรฐาน (Standard)
+
+- ### สำหรับ Microsoft Edge 
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Edge -Silent
 ```
-### 🟡 สำหรับ Google Chrome
+- ### สำหรับ Google Chrome
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Chrome -Silent
 ```
-### 🟠 สำหรับ Brave Browser
+- ### สำหรับ Brave Browser (แนะนำ!)
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Brave -Silent
 ```
-### 🟠 สำหรับ Opera (Standard)
-```powershell
-& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Opera -Silent
-```
-### 🟠 สำหรับ Opera GX (Gaming)
-```powershell
-& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser OperaGX -Silent
-```
-### 🟠 สำหรับ Vivaldi
+
+# 🔴 กลุ่มทางเลือก (Alternative)
+- ### สำหรับ Vivaldi
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Vivaldi -Silent
 ```
-### 🟠 สำหรับ Yandex Browser
+- ### สำหรับ Yandex
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Yandex -Silent
+```
+
+# ⚪ กลุ่มโอเพนซอร์ส (Open Source)
+- ### สำหรับ Chromium
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Chromium -Silent
+```
+- ### สำหรับ Thorium
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Thorium -Silent
 ```
 
 ### ⚙️ คำอธิบาย Parameter
@@ -115,12 +103,12 @@ irm bit.ly/YToTV | iex
 
 ## 📝 ขั้นตอนการใช้งาน (Step-by-Step)
 
-### 1. เลือกเบราว์เซอร์ (Select & Create)
+### 1. ติ๊กเลือกเบราว์เซอร์ (Select & Create)
 เมื่อเปิดโปรแกรม:
-1.  เลือก Browser ที่คุณต้องการใช้จากเมนู **Dropdown**
-2.  กดปุ่ม **"Create Shortcut"**
+1.  เลือก Browser ที่คุณต้องการใช้จากเมนู **Switch**
+2.  กดปุ่ม **"Start"** เพื่อ **Create Shortcut**
 
-![Installer GUI](https://github.com/user-attachments/assets/fb40e77c-6615-4422-b448-8390ad39e3bd)
+![Installer GUI](https://github.com/user-attachments/assets/dc68ea63-3947-4759-87a7-2410b7a896e1)
 
 *(รูปที่ 2: เลือก Browser แล้วกดปุ่มได้เลย)*
 
@@ -128,9 +116,14 @@ irm bit.ly/YToTV | iex
 โปรแกรมจะแจ้งว่า **"Success!"** ทันที (ใช้เวลาไม่ถึง 2 วินาที)
 คุณจะพบ Shortcut ชื่อ **Youtube On TV** บนหน้าจอ พร้อมไอคอนสีแดงสวยงาม
 
-![Success Screen](https://github.com/user-attachments/assets/71537814-5b4f-44d8-8741-3ae30b507796)
+![Success Screen](https://github.com/user-attachments/assets/8d32015a-c794-467a-8f78-fca5dea9e49b)
 
 *(รูปที่ 3: Shortcut ถูกสร้างเรียบร้อย)*
+
+![Success Screen](https://github.com/user-attachments/assets/69970f7c-e2d8-4a56-84c3-5c615e6251d0)
+
+*(รูปที่ 4: Shortcut ถูกสร้างบน Desktop)*
+
 
 ### 3. การเข้าใช้งาน (Launch)
 เมื่อดับเบิ้ลคลิก Shortcut:
@@ -139,7 +132,7 @@ irm bit.ly/YToTV | iex
 
 ![YouTube TV](https://github.com/user-attachments/assets/bf26eae8-3ef6-4ae3-8053-2c61bb6556bc)
 
-*(รูปที่ 4: หน้าจอ YouTube TV พร้อมใช้งาน)*
+*(รูปที่ 5: หน้าจอ YouTube TV พร้อมใช้งาน)*
 
 <br>
 
