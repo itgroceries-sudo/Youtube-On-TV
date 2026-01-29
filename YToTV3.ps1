@@ -275,23 +275,17 @@ foreach ($b in $DetectedList) {
     if($b.Inst){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
 }
 
+
 $BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); 
+
+# [FIX] Exit Button Logic
 $BC.Add_Click({ 
     if(!$Silent){ Write-Host "`n [EXIT] Clean & Bye !!" -ForegroundColor Cyan }
     [System.Windows.Forms.Application]::DoEvents()
-    Start-Sleep 2 
-    
-    # [REQ 3] CLEANUP LOGIC
-    # Clean Temp Directory
-    if (Test-Path $InstallDir) { Remove-Item $InstallDir -Recurse -Force -ErrorAction SilentlyContinue }
-    # Clean Self if running from Temp (IEX Mode)
-    if ($PSCommandPath -eq $TempScript) { 
-        # Schedule self-deletion via cmd because we can't delete a running script from within itself easily
-        Start-Process "cmd.exe" -ArgumentList "/c timeout /t 1 >nul & del `"$TempScript`"" -WindowStyle Hidden
-    }
-    
-    $Window.Close() 
+    Start-Sleep 2
+    $Window.Close()
 })
+
 $BA.Add_Click({
     $Sel = $Stack.Children | Where-Object { $_.Child.Children[2].IsChecked }; if ($Sel.Count -eq 0) { return }
     $BA.IsEnabled = $false; $BA.Content = "Processing..."; foreach ($i in $Sel) { Install-Browser $i.Child.Children[2].Tag }; 
@@ -299,4 +293,24 @@ $BA.Add_Click({
 })
 $BAbt.Add_Click({ [System.Windows.MessageBox]::Show("YouTube TV Installer`nVersion: $AppVersion`n`nDeveloped by IT Groceries Shop", "About", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null })
 
+# --- Show Window ---
 $Window.ShowDialog() | Out-Null
+
+# =========================================================
+#  [FINAL CLEANUP] SELF-DESTRUCT SEQUENCE
+# =========================================================
+
+# 1. Force Release Resources
+$Window = $null
+[System.GC]::Collect()
+[System.GC]::WaitForPendingFinalizers()
+
+# 2. Spawn CMD to wait and delete
+# Logic: timeout 3 > delete Folder > delete Script
+$DelCmd = "/c timeout /t 3 >nul & rmdir /s /q `"$InstallDir`""
+
+if ($PSCommandPath -eq $TempScript) { 
+    $DelCmd += " & del `"$TempScript`"" 
+}
+
+Start-Process "cmd.exe" -ArgumentList $DelCmd -WindowStyle Hidden
