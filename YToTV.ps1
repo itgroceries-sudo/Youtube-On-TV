@@ -3,12 +3,8 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v75.0 (PERSISTENT & FIXED)
-#  Based on: v74 (Final Fix)
-#  Changes:
-#   - Icons moved to AppData (Persistent)
-#   - UI Bug Fixed (Event Handler Closure)
-#   - "Not Installed" items now open Download Page
+#  YOUTUBE TV INSTALLER v75.0 (CONSOLE FIX)
+#  Status: Version Display RESTORED | Persistent | UI Fixed
 # =========================================================
 
 # --- [1. INITIAL SETUP] ---
@@ -17,7 +13,8 @@ $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL = "$GitHubRaw/YToTV.ps1"
-$AppVersion = "2.0 Build 23.75 (Persistent)"
+$AppVersion = "2.0 Build 23.75"
+$BuildDate  = "29-1-2026"
 
 # Check Mode (Local vs IEX)
 $IsLocal = ($PSScriptRoot -or $ScriptPath)
@@ -97,7 +94,7 @@ if ($Silent) {
     Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# Assets (Using Persistent Directory)
+# Assets (Persistent)
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -107,7 +104,6 @@ $Assets = @{
 
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
-    # Don't delete existing good icons to save time/bandwidth
     if(!(Test-Path $D) -or (Get-Item $D).Length -lt 100){ 
         try{ (New-Object Net.WebClient).DownloadFile($U,$D); if(!$Silent){ Write-Host " [DOWNLOAD] OK: $N" -ForegroundColor Green } }catch{} 
     } else { if(!$Silent){ Write-Host " [CACHE]    OK: $N" -ForegroundColor DarkGray } }
@@ -122,7 +118,15 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
     if($h){ [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } 
 }
 
-# Browser Logic (Added URLs for Download Feature)
+# --- [RESTORED] Console Version Display ---
+if(!$Silent){ 
+    Write-Host "`n==========================================" -ForegroundColor Green
+    Write-Host "   (V.2 Build 23.75 : $BuildDate)         " -ForegroundColor Green
+    Write-Host "==========================================" -ForegroundColor Green
+    Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
+}
+
+# Browser Logic
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Global:Browsers = @(
@@ -246,7 +250,7 @@ foreach ($b in $DetectedList) {
     $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::Auto}))
     
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
-    $Bor.Tag = $b.URL # Store URL for download logic
+    $Bor.Tag = $b.URL 
     
     $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; 
     if (Test-Path $b.Img) { $Img.Source = $b.Img }
@@ -264,9 +268,8 @@ foreach ($b in $DetectedList) {
     }
     
     if(!$b.Inst){ 
-        # [REQ 3] Click to Download logic
         $Txt.Text += " (Click to Download)"; 
-        $Txt.Foreground="#55AAFF"; # Blue text for link
+        $Txt.Foreground="#55AAFF"; 
         $Chk.IsEnabled=$false; $Chk.IsChecked=$false; $Bor.Opacity=0.8 
     }
     
@@ -274,16 +277,14 @@ foreach ($b in $DetectedList) {
     [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
 
-    # [FIX #4] UI Glitch Fix: Use $sender relative lookup
+    # [FIX] UI Glitch Fix
     $Bor.Add_MouseLeftButtonUp({
         param($sender, $e)
         $cb = $sender.Child.Children[2]
         
         if ($cb.IsEnabled) { 
-            # Normal toggle
             $cb.IsChecked = -not $cb.IsChecked 
         } else {
-            # [REQ 3] Open Download Link
             if ($sender.Tag) { Start-Process $sender.Tag }
         }
     })
@@ -295,7 +296,6 @@ $BC.Add_Click({
     [System.Windows.Forms.Application]::DoEvents()
     Start-Sleep 2 
     
-    # [FIX #1] Only delete self if temp script, KEEP AppData icons
     if ($PSCommandPath -eq $TempScript) { 
         Start-Process "cmd.exe" -ArgumentList "/c timeout /t 2 >nul & del `"$TempScript`"" -WindowStyle Hidden
     }
