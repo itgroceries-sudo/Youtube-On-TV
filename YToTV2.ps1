@@ -9,7 +9,7 @@
 
 # --- [1. CONFIGURATION] ---
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
-$SelfURL   = "$GitHubRaw/YToTV.ps1"
+$SelfURL   = "$GitHubRaw/YToTV2.ps1"
 $InstallDir = "$env:TEMP\ITG_YToTV"
 $AppVersion = "2.0 Build 22.74"
 
