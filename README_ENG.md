@@ -1,128 +1,139 @@
 # 📺 YouTube TV Desktop Installer
 
-> **Transform your computer into a High-End Smart TV with a single click.**
-> *Developed by IT Groceries Shop*
+> **Transform your computer into a `High-End` `Smart TV` with a single click.**
+> *Developed by `IT Groceries Shop`*
 
-![Version](https://img.shields.io/badge/version-7.2.0-red?style=for-the-badge&logo=youtube)
+![Version](https://img.shields.io/badge/version-v2.0_Build_72_(29--1--2026)-red?style=for-the-badge&logo=youtube)
 ![Platform](https://img.shields.io/badge/platform-Windows_10%2F11-blue?style=for-the-badge&logo=windows)
-![Tech](https://img.shields.io/badge/Powered_By-PowerShell_%2B_Batch-black?style=for-the-badge&logo=powershell)
-![Browser](https://img.shields.io/badge/Support-Brave_%7C_Chrome_%7C_Edge-0078D7?style=for-the-badge&logo=microsoft-edge)
+![Tech](https://img.shields.io/badge/Powered_By-PowerShell_WPF-green?style=for-the-badge&logo=powershell)
 
 ---
 
 ## 📸 Preview
 
-Transforms the standard YouTube web interface into a clean, easy-to-use **TV Interface (Leanback)**. Fully supports remote control or keyboard navigation, featuring an **Always-On** system for uninterrupted playback.
+Transforms the standard `YouTube` web page into a clean, user-friendly `**TV Interface (Leanback)**`. Fully supports remote control and keyboard navigation, featuring an `**Always-On**` system for seamless, uninterrupted playback.
 
 ![YouTube TV Interface](https://github.com/user-attachments/assets/4cc8993f-feab-445b-ae97-59c3443fa17b)
-*(Figure 1: The beautiful YouTube TV Mode interface after installation)*
 
 ---
 
-## 🚀 Introduction
+## 🚀 Key Features
 
-**YouTube TV Installer** is a smart tool designed to "unlock" the **TV Mode** interface on your computer by simulating the latest Smart TV User-Agent (Samsung Tizen).
+* **⚡ New UI Design:** Sleek, modern interface `(Dark Theme)` built with native `**WPF**`. Zero external `Library` dependencies.
+* **📂 Auto Icon Loader:** Automatically fetches high-quality `Browser` icons from the `Server` (No more pixelated icons extracted from `exe` files).
+* **🌍 7 Browsers Support:** Supports `7` popular web browsers:
 
-Perfect for:
-* 🖥️ **HTPC (Home Theater PC):** Connect your PC to a large TV screen.
-* 🎮 **Mini PC / Console:** Easy control via game controllers.
-* ✨ **Minimalist:** For those who love a clean, dark aesthetic with large, accessible buttons.
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chrome.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Google Chrome**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Edge.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Microsoft Edge**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Brave.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Brave Browser**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Vivaldi.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Vivaldi**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Yandex.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Yandex Browser**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chromium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Chromium**
+    - <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Thorium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> **Thorium**
 
----
-
-## 💎 Key Features
-
-| Feature | Description |
-| :---- | :---- |
-| **⚡ Instant Creation** | **Fastest!** Instantly create shortcuts **without opening the browser**. No need to wait for user installation prompts. |
-| **🌍 Universal TV Mode** | Uses the latest 2025 User-Agent standard (**Samsung Tizen 9.0**). Fully supports **Brave**, **Chrome**, and **Edge**. |
-| **⚔️ Universal Auto-Kill** | **(New!)** Every shortcut embeds a **"Force Close Previous Browser"** command before launching. Guarantees 100% TV Mode functionality. |
-| **🎨 Custom Icon Injection** | Directly fetches a high-quality YouTube icon from the server (No more generic white paper or default browser icons). |
-| **🎵 Background Play** | **(Anti-Freeze)** Embeds commands to prevent video playback from stopping when minimized or covered by other windows. |
-
----
-
-## ⚙️ How It Works (Technical Deep Dive)
-
-This script operates via **Direct Injection** without relying on the browser to generate files:
-
-1.  **The Selector:** User selects an installed browser.
-2.  **The Creator:** Uses `WScript.Shell` to create a `.lnk` (Shortcut) on the Desktop.
-3.  **The Wrapper:** The resulting shortcut doesn't call the browser directly. It routes through `CMD` to:
-    * Execute `taskkill /f /im [browser].exe` to clear old processes.
-    * Execute `start` to open the browser with specific arguments (`--app`, `--user-agent` Tizen, `--disable-occlusion`).
-4.  **The Finisher:** Injects the `YouTube.ico` loaded from the cloud into the file.
+* **🛠️ Manual Construction:** Hand-coded button architecture `(Manual Build)` guarantees 100% stability. No missing icons, no random crashes.
+* **🤖 Pre-Loader System:** Automatically verifies and downloads all essential assets before launch to prevent errors.
 
 ---
 
 ## 💻 Installation
 
 ### Quick Install (One-Line Command)
-Open **PowerShell** or Terminal and paste this command:
+Open `**PowerShell**` or `**Terminal**` and paste the following command:
 
 ```powershell
 iex(irm bit.ly/YToTV)
 ```
 
-*OR*
+*Or*
 ```Terminal
 irm bit.ly/YToTV | iex
 ```
 
+Then Press `**Enter**`
+
 ---
 
-## 🚀 Advanced Mode (Silent / SysAdmin)
+## 🚀 Pro Mode (Hxckerman / Silent Mode)
 
-> **Perfect for:** IT Technicians, System Admins, or Automated Windows Installation Scripts.
+> **Suitable for:** IT Technicians, System Admins, or automated Windows installation scripts.
 >> **Autounattend.xml:** Ideal for automated Windows deployment.
->>> *These commands install immediately without prompts or pop-ups.*
+>>> *These commands will install immediately **without prompting** and suppress the final pop-up window.*
 
-### 🔵 For Microsoft Edge (Recommended!)
+# 🔵 Standard
+
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Edge.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Microsoft Edge
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Edge -Silent
 ```
-### 🟡 For Google Chrome
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chrome.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Google Chrome
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Chrome -Silent
 ```
-### 🟠 For Brave Browser
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Brave.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Brave Browser (แนะนำ!)
 ```powershell
 & ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Brave -Silent
 ```
-### ⚙️ Parameter Explanation
-* **`-Browser [Name]`** : Specifies the target browser (`Edge`, `Chrome`, `Brave`)
-* **`-Silent`** : Runs quietly without showing a Message Box upon completion.
+# 🔴 Alternatives
 
-## 📝 Step-by-Step Guide
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Vivaldi.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Vivaldi
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Vivaldi -Silent
+```
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Yandex.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Yandex
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Yandex -Silent
+```
+# ⚪ Open Source
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Chromium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Chromium
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Chromium -Silent
+```
+- ### <img src="https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main/IconFiles/Thorium.ico" width="20" height="20" style="vertical-align:middle; margin-right:5px;"/> For Thorium
+```powershell
+& ([scriptblock]::Create((irm bit.ly/YToTV))) -Browser Thorium -Silent
+```
+
+### ⚙️ Parameter Descriptions
+* **`-Browser [Name]`** : Specifies the target Browser (`Edge`, `Chrome`, `Brave`, `Opera`, `OperaGX`, `Vivaldi`, `Yandex`).
+* **`-Silent`** : Runs silently without displaying a `**Message Box**` upon completion.
+
+---
+
+## 📝 Usage (Step-by-Step)
+
 ### 1. Select & Create
-When the program opens:
-1.  Select your preferred browser from the Dropdown menu.
-2.  Click the "Create Shortcut" button.
+Upon launching the program:
+1. Toggle the `*Switch**` next to your desired `*Browser*`.
+2. Click the `Start` button to `Create Shortcut`.
 
-![Installer GUI](https://github.com/user-attachments/assets/fb40e77c-6615-4422-b448-8390ad39e3bd)
+![Installer GUI](https://github.com/user-attachments/assets/450e7691-4548-46b7-8cc0-c3001e8d4f11)
 
-(Figure 2: Select a browser and click the button)
+*(Fig 2: Select your `Browser` and click the button)*
 
 ### 2. Finish
-The program will instantly report "Success!" (takes less than 2 seconds). You will find a shortcut named Youtube On TV on your desktop with a beautiful red icon.
+The program will immediately notify you with *`"Created!"`* (takes less than 2 seconds).
+You will find a shortcut named *`Youtube On TV`* on your desktop, complete with a beautiful red icon.
 
-![Success Screen](https://github.com/user-attachments/assets/71537814-5b4f-44d8-8741-3ae30b507796)
+![Success Screen](https://github.com/user-attachments/assets/8d32015a-c794-467a-8f78-fca5dea9e49b)
 
-(Figure 3: Shortcut successfully created)
+*(Fig 3: `Shortcut` created successfully)*
+
+![Success Screen](https://github.com/user-attachments/assets/69970f7c-e2d8-4a56-84c3-5c615e6251d0)
+
+*(Fig 4: `Shortcut` created on `Desktop`)*
 
 ### 3. Launch
-When double-clicking the shortcut:
-1.  The system will immediately close any running instances of that browser (to clear session/cache).
-2.  Opens the YouTube TV interface, ready to use.
+When you double-click the Shortcut:
+1. The system will immediately close any active instances of that *`Browser*` (to clear the session).
+2. Launches the *`YouTube TV*` interface, ready for use.
 
 ![YouTube TV](https://github.com/user-attachments/assets/bf26eae8-3ef6-4ae3-8053-2c61bb6556bc)
 
-(Figure 4: YouTube TV Mode ready for action)
+*(Fig 5: `YouTube TV` interface ready for use)*
 
 <br>
 
 <div align="center">
 
-Developed with ❤️ by IT Groceries Shop
-
-</div>
+**Developed with ❤️ by `IT Groceries Shop`**
