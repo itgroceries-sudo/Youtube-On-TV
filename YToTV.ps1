@@ -11,7 +11,7 @@
 # [FIX #1] Use LocalAppData instead of Temp so icons don't vanish
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
-$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL = "$GitHubRaw/YToTV.ps1"
 $AppVersion = "2.0 Build 23.75"
 $BuildDate  = "29-1-2026"
