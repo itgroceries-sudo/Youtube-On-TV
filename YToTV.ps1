@@ -3,14 +3,15 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v73.0 (SIMPLE SOURCE / v23 LOGIC)
-#  Status: Direct Path Binding | Win10 Fix | Temp Dir
+#  YOUTUBE TV INSTALLER v74.0 (FEATURE PACKED)
+#  Status: About Btn | Brave Rec. | Admin Msg | Safe Icons
 # =========================================================
 
 # --- [1. CONFIGURATION] ---
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL   = "$GitHubRaw/YToTV.ps1"
 $InstallDir = "$env:TEMP\ITG_YToTV"
+$AppVersion = "2.0 Build 22.74"
 
 # --- [2. ARGUMENTS & INIT] ---
 $Silent = $false
@@ -49,6 +50,10 @@ if (-not $PSScriptRoot -and -not $ScriptPath) {
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
 if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    # [REQ 1] Admin Notification
+    Write-Host " [+] Requesting Admin privileges..." -ForegroundColor Yellow
+    Start-Sleep -Milliseconds 500
+    
     $Target = if ($ScriptPath) { $ScriptPath } else { $PSCommandPath }
     $PassArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$Target`"")
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
@@ -95,7 +100,7 @@ if ($Silent) {
     Write-Host "==========================================" -ForegroundColor Yellow
 }
 
-# --- Assets (Cleaner) ---
+# --- Assets ---
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 $Assets = @{
     "MenuIcon" = "$GitHubRaw/YouTube.ico"; "ConsoleIcon" = "https://itgroceries.blogspot.com/favicon.ico"
@@ -105,16 +110,9 @@ $Assets = @{
 
 function DL ($U, $N) { 
     $D="$InstallDir\$N"
-    # Auto-Clean corrupt files
     if (Test-Path $D) { if ((Get-Item $D).Length -lt 100) { Remove-Item $D -Force } }
-
-    if(!(Test-Path $D)){ 
-        try{ (New-Object Net.WebClient).DownloadFile($U,$D)
-             if(!$Silent){ Write-Host " [DOWNLOAD] OK: $N" -ForegroundColor Green }
-        }catch{} 
-    } else {
-        if(!$Silent){ Write-Host " [CACHE]    OK: $N" -ForegroundColor DarkGray }
-    }
+    if(!(Test-Path $D)){ try{ (New-Object Net.WebClient).DownloadFile($U,$D); if(!$Silent){ Write-Host " [DOWNLOAD] OK: $N" -ForegroundColor Green } }catch{} } 
+    else { if(!$Silent){ Write-Host " [CACHE]    OK: $N" -ForegroundColor DarkGray } }
     return $D
 }
 
@@ -129,7 +127,7 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){
 # --- Browser Logic ---
 if(!$Silent){ 
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host "   (V.2 Build 72 : 29-1-2025)             " -ForegroundColor Green
+    Write-Host "   (V.2 Build 22 : 29-1-2025)             " -ForegroundColor Green
     Write-Host "==========================================" -ForegroundColor Green
     Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green 
 }
@@ -168,7 +166,6 @@ function Install-Browser {
     }
 }
 
-# --- CLI Mode ---
 if ($Silent -or ($Browser -ne "Ask")) {
     foreach($b in $Global:Browsers){
         if($b.N -match $Browser -or $b.K -match $Browser){
@@ -186,8 +183,6 @@ if ($Silent -or ($Browser -ne "Ask")) {
 $DetectedList = @()
 foreach ($b in $Global:Browsers) {
     $FP=$null; foreach ($p in $b.P) { if ($p -and (Test-Path $p)) { $FP = $p; break } }
-    
-    # [FIX] v23/Simple Logic: Store String Path directly
     $IconPath = "$InstallDir\$($b.K).ico"
     
     if ($FP) { 
@@ -224,6 +219,11 @@ Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocatio
                 <TextBlock Text="YouTube TV Installer" Foreground="White" FontSize="28" FontWeight="Bold"><TextBlock.Effect><DropShadowEffect Color="#FF0000" BlurRadius="15" Opacity="0.6"/></TextBlock.Effect></TextBlock>
                 <StackPanel Orientation="Horizontal" Margin="2,5,0,0"><TextBlock Text="Developed by IT Groceries Shop &#x2665;" Foreground="#FF0000" FontSize="14" FontWeight="Bold"/></StackPanel>
             </StackPanel>
+            <Button x:Name="BAbt" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top" Width="30" Height="30" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,5,0,0" ToolTip="About">
+                <Viewbox Width="20" Height="20">
+                    <Path Fill="#AAAAAA" Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+                </Viewbox>
+            </Button>
         </Grid>
         <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Hidden"><StackPanel x:Name="List"/></ScrollViewer></Border>
         <Grid Grid.Row="3" Margin="0,20,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -250,7 +250,7 @@ try {
 } catch {}
 if (Test-Path $LocalIcon) { $Window.Icon = $LocalIcon; $Window.FindName("Logo").Source = $LocalIcon }
 
-$Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG")
+$Stack = $Window.FindName("List"); $BA = $Window.FindName("BA"); $BC = $Window.FindName("BC"); $BF = $Window.FindName("BF"); $BG = $Window.FindName("BG"); $BAbt = $Window.FindName("BAbt")
 
 foreach ($b in $DetectedList) {
     $Row = New-Object System.Windows.Controls.Grid; $Row.Height = 45; $Row.Margin = "0,5,0,5"
@@ -261,7 +261,6 @@ foreach ($b in $DetectedList) {
     $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 8; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"
     
     $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; 
-    # [FIX] Direct String Assignment (Let WPF Handle it)
     if (Test-Path $b.Img) { $Img.Source = $b.Img }
     
     [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
@@ -269,18 +268,37 @@ foreach ($b in $DetectedList) {
     $Chk = New-Object System.Windows.Controls.CheckBox; $Chk.Style=$Window.Resources["BlueSwitch"]; $Chk.VerticalAlignment="Center"; 
     $Chk.Tag = $b.N 
     
-    if($b.Inst){$Chk.IsChecked=$true}else{$Txt.Text+=" (Not Installed)";$Txt.Foreground="#666666";$Chk.IsEnabled=$false;$Chk.IsChecked=$false;$Bor.Opacity=0.5}
+    # [REQ 3 & 4] Brave Logic: Recommended Text & Only Brave Checked
+    if ($b.N -match "Brave") {
+        $Txt.Text += " (Recommended)"
+        $Chk.IsChecked = $true
+    } else {
+        $Chk.IsChecked = $false
+    }
+    
+    if(!$b.Inst){ $Txt.Text+=" (Not Installed)"; $Txt.Foreground="#666666"; $Chk.IsEnabled=$false; $Chk.IsChecked=$false; $Bor.Opacity=0.5 }
+    
     [System.Windows.Controls.Grid]::SetColumn($Txt,1); $Row.Children.Add($Txt)|Out-Null
     [System.Windows.Controls.Grid]::SetColumn($Chk,2); $Row.Children.Add($Chk)|Out-Null
     $Stack.Children.Add($Bor)|Out-Null
     if($b.Inst){ $Bor.Add_MouseLeftButtonUp({param($s,$e)$Chk.IsChecked = -not $Chk.IsChecked}) }
 }
 
-$BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); $BC.Add_Click({ $Window.Close() })
+$BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); 
+$BC.Add_Click({ 
+    # [REQ 2] Clean & Bye Message
+    if(!$Silent){ Write-Host "`n [EXIT] Clean & Bye !!" -ForegroundColor Cyan }
+    $Window.Close() 
+})
 $BA.Add_Click({
     $Sel = $Stack.Children | Where-Object { $_.Child.Children[2].IsChecked }; if ($Sel.Count -eq 0) { return }
     $BA.IsEnabled = $false; $BA.Content = "Processing..."; foreach ($i in $Sel) { Install-Browser $i.Child.Children[2].Tag }; 
     $BA.Content = "Finished"; [System.Console]::Beep(1000, 200); Start-Sleep 2; $BA.IsEnabled = $true; $BA.Content = "Start Install"
+})
+
+# [REQ 5] About Action
+$BAbt.Add_Click({
+    [System.Windows.MessageBox]::Show("YouTube TV Installer`nVersion: $AppVersion`n`nDeveloped by IT Groceries Shop", "About", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
 })
 
 $Window.ShowDialog() | Out-Null
