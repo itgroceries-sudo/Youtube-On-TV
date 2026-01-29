@@ -16,7 +16,7 @@
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
-$SelfURL = "$GitHubRaw/YToTV4.ps1"
+$SelfURL = "$GitHubRaw/YToTV.ps1"
 $AppVersion = "2.0 Build 23.75 (Persistent)"
 
 # Check Mode (Local vs IEX)
