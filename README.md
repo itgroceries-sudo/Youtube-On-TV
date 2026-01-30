@@ -108,7 +108,7 @@ irm bit.ly/YToTV | iex
 1.  เลือก `*Browser*` ที่คุณต้องการใช้จากเมนู `*Switch**`
 2.  กดปุ่ม `Start` เพื่อ `Create Shortcut`
 
-![Installer GUI](https://github.com/user-attachments/assets/b78ec541-5516-4c9c-9624-87389792b959)
+![Installer GUI](https://github.com/user-attachments/assets/93d30495-c3de-4eb2-9440-502a3d663bab)
 
 *(รูปที่ 2: เลือก `Browser` แล้วกดปุ่มได้เลย)*
 
@@ -116,11 +116,23 @@ irm bit.ly/YToTV | iex
 โปรแกรมจะแจ้งว่า *`"Created!"`* ทันที (ใช้เวลาไม่ถึง 2 วินาที)
 คุณจะพบ Shortcut ชื่อ *`Youtube On TV`* บนหน้าจอ พร้อมไอคอนสีแดงสวยงาม
 
-![Success Screen](https://github.com/user-attachments/assets/8d32015a-c794-467a-8f78-fca5dea9e49b)
+<details>
+  <summary>### คลิกเพื่อดูรูปภาพ</summary>
+<div align="center">
+    <img src="https://github.com/user-attachments/assets/8d32015a-c794-467a-8f78-fca5dea9e49b" width="100%" style="display: block; margin: 0 auto;">
+  </a>
+</div>
+</details>
 
 *(รูปที่ 3: `Shortcut` ถูกสร้างเรียบร้อย)*
 
-![Success Screen](https://github.com/user-attachments/assets/69970f7c-e2d8-4a56-84c3-5c615e6251d0)
+<details>
+  <summary>### คลิกเพื่อดูรูปภาพ</summary>
+<div align="center">
+    <img src="https://github.com/user-attachments/assets/69970f7c-e2d8-4a56-84c3-5c615e6251d0" width="100%" style="display: block; margin: 0 auto;">
+  </a>
+</div>
+</details>
 
 *(รูปที่ 4: `Shortcut` ถูกสร้างบน `Desktop`)*
 
@@ -130,7 +142,13 @@ irm bit.ly/YToTV | iex
 1.  ระบบจะปิด *`Browser*` ตัวนั้นๆ ที่เปิดค้างอยู่ทันที (เพื่อเคลียร์ค่า)
 2.  เปิดหน้าจอ *`YouTube TV*` ขึ้นมาพร้อมใช้งาน
 
-![YouTube TV](https://github.com/user-attachments/assets/bf26eae8-3ef6-4ae3-8053-2c61bb6556bc)
+<details>
+  <summary>### คลิกเพื่อดูรูปภาพ</summary>
+<div align="center">
+    <img src="https://github.com/user-attachments/assets/bf26eae8-3ef6-4ae3-8053-2c61bb6556bc" width="100%" style="display: block; margin: 0 auto;">
+  </a>
+</div>
+</details>
 
 *(รูปที่ 5: หน้าจอ `YouTube TV` พร้อมใช้งาน)*
 
