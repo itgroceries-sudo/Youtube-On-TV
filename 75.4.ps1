@@ -21,7 +21,7 @@ if (-not ([PowerShell].Assembly.GetType('Win32.Win32Ghost'))) {
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
-$SelfURL = "$GitHubRaw/YToTV.ps1"
+$SelfURL = "$GitHubRaw/75.4.ps1"
 $AppVersion = "2.0 Build 23.75.4"
 $BuildDate  = "02-02-2026"
 
