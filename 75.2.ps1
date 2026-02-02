@@ -20,7 +20,7 @@ $Win32 = Add-Type -MemberDefinition $User32Def -Name "Win32Ghost" -Namespace Win
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
-$SelfURL = "$GitHubRaw/YToTV.ps1"
+$SelfURL = "$GitHubRaw/75.2.ps1"
 $AppVersion = "2.0 Build 23.75.2"
 $BuildDate  = "02-02-2026"
 
