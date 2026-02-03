@@ -10,7 +10,7 @@
 # --- [1. INITIAL SETUP] ---
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
-$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
+$GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
 $SelfURL = "$GitHubRaw/755.ps1"
 $AppVersion = "2.0 Build 23.75.5"
 $BuildDate  = "03-02-2026"
