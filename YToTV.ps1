@@ -336,6 +336,7 @@ $BC.Add_Click({
         Start-Process "cmd.exe" -ArgumentList "/c timeout /t 2 >nul & del `"$TempScript`"" -WindowStyle Hidden
     }
     $Window.Close() 
+    [Environment]::Exit(0)
 })
 $BA.Add_Click({
     $Sel = $Stack.Children | Where-Object { $_.Child.Children[2].IsChecked }; if ($Sel.Count -eq 0) { return }
