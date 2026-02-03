@@ -173,9 +173,10 @@ if ($Silent -or ($Browser -ne "Ask")) {
 # --- GUI ---
 if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
 
+# XAML (Expanded Width to 560 for space)
 [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" Topmost="True">
+Title="YouTube TV Installer" Height="860" Width="560" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" Background="#181818" Topmost="True" WindowStyle="None" BorderBrush="#2196F3" BorderThickness="2">
     <Window.Resources>
         <Style x:Key="BlueSwitch" TargetType="{x:Type CheckBox}">
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="{x:Type CheckBox}">
@@ -189,7 +190,7 @@ Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocatio
         <Style x:Key="Btn" TargetType="Button"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="22"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.FontWeight="Bold"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Opacity" Value="0.8"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
     </Window.Resources>
     <Grid Margin="25">
-        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="*"/><RowDefinition Height="120"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         
         <Grid Grid.Row="0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <Image x:Name="Logo" Grid.Column="0" Width="80" Height="80"/>
@@ -201,15 +202,20 @@ Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocatio
         
         <Border Grid.Row="2" Background="#1E1E1E"><ScrollViewer VerticalScrollBarVisibility="Hidden"><StackPanel x:Name="List"/></ScrollViewer></Border>
         
-        <Grid Grid.Row="3" Margin="0,20,0,0">
-            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <Border Grid.Row="3" Background="Black" Margin="0,10,0,0" CornerRadius="5" BorderBrush="#333333" BorderThickness="1">
+            <ScrollViewer x:Name="LogScroll" VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="LogBox" Foreground="#00FF00" FontFamily="Consolas" FontSize="12" Margin="10" TextWrapping="Wrap" Text="[INIT] System Ready..."/>
+            </ScrollViewer>
+        </Border>
+
+        <Grid Grid.Row="4" Margin="0,20,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
             
             <StackPanel Orientation="Horizontal" Grid.Column="0">
                  <Button x:Name="BF" Width="45" Height="45" Background="#1877F2" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="Facebook" Cursor="Hand"><TextBlock Text="f" Foreground="White" FontSize="26" FontWeight="Bold" Margin="0,-4,0,0"/></Button>
                  
                  <Button x:Name="BG" Width="45" Height="45" Background="#333333" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="GitHub" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></Viewbox></Button>
                  
-                 <Button x:Name="BRefresh" Width="45" Height="45" Background="#4CAF50" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="Re-Scan Browsers" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></Viewbox></Button>
+                 <Button x:Name="BRefresh" Width="45" Height="45" Background="#4CAF50" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="Re-Scan" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></Viewbox></Button>
                  
                  <Button x:Name="BAbt" Width="45" Height="45" Background="#607D8B" Style="{StaticResource Btn}" ToolTip="About" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></Viewbox></Button>
             </StackPanel>
