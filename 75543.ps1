@@ -295,7 +295,6 @@ function Load-BrowserList {
 # Initial Load
 Load-BrowserList
 
-# Event Handlers
 $BRefresh.Add_Click({ 
     Load-BrowserList 
     [System.Console]::Beep(1500, 100) 
@@ -303,18 +302,24 @@ $BRefresh.Add_Click({
 
 $BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE" }); $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main" }); 
 $BC.Add_Click({ 
-    if(!$Silent){ Write-Host "`n [EXIT] Clean & Bye !!" -ForegroundColor Cyan }
-    [System.Windows.Forms.Application]::DoEvents()
-    Start-Sleep 2 
-    
-    if ($PSCommandPath -eq $TempScript) { 
-        Start-Process "cmd.exe" -ArgumentList "/c timeout /t 2 >nul & del `"$TempScript`"" -WindowStyle Hidden
-    }
+    Write-Log "[EXIT] Clean & Bye !!" "Cyan"
+    [System.Windows.Forms.Application]::DoEvents(); Start-Sleep 2 
+    if ($PSCommandPath -eq $TempScript) { Start-Process "cmd.exe" -ArgumentList "/c timeout /t 2 >nul & del `"$TempScript`"" -WindowStyle Hidden }
     $Window.Close() 
 })
 $BA.Add_Click({
     $Sel = $Stack.Children | Where-Object { $_.Child.Children[2].IsChecked }; if ($Sel.Count -eq 0) { return }
-    $BA.IsEnabled = $false; $BA.Content = "Processing..."; foreach ($i in $Sel) { Install-Browser $i.Child.Children[2].Tag }; 
+    $BA.IsEnabled = $false; $BA.Content = "Processing..."
+    
+    foreach ($i in $Sel) { 
+        $TargetName = $i.Child.Children[2].Tag
+        if (Install-BrowserLogic $TargetName) {
+            Write-Log "[INSTALL] $TargetName... DONE" "Green"
+        } else {
+            Write-Log "[ERROR] $TargetName Not Found!" "Red"
+        }
+    }
+    
     $BA.Content = "Finished"; [System.Console]::Beep(1000, 200); Start-Sleep 2; $BA.IsEnabled = $true; $BA.Content = "Start Install"
 })
 $BAbt.Add_Click({ [System.Windows.MessageBox]::Show("YouTube TV Installer`nVersion: $AppVersion`n`nDeveloped by IT Groceries Shop", "About", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null })
