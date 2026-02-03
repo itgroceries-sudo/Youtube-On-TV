@@ -3,16 +3,16 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v75.6.6 (DESKTOP TOGGLE)
-#  Version: 2.0 Build 23.75.6.6
-#  File: 7566.ps1 | Branch: branch
-#  Status: Added Desktop Toggle | Independent Targets
+#  YOUTUBE TV INSTALLER v75.6.8 (SILENT FIX)
+#  Version: 2.0 Build 23.75.6.8
+#  File: 7568.ps1 | Branch: branch
+#  Status: Fixed Start Menu Path (All Users)
 # =========================================================
 
 # ---------------------------------------------------------
 # [1] CONFIGURATION
 # ---------------------------------------------------------
-$AppVersion = "2.0 Build 23.75.6.6"
+$AppVersion = "2.0 Build 23.75.6.8"
 $BuildDate  = "04-02-2026"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
@@ -21,10 +21,19 @@ $SelfURL    = "$GitHubRaw/YToTV.ps1"
 
 $TargetFile = if ($ScriptPath) { $ScriptPath } elseif ($PSScriptRoot) { $PSCommandPath } else { $null }
 
+# [UPDATE] Silent Mode Defaults
 $Silent = $false; $Browser = "Ask"
+# Default to FALSE, enables only via GUI or Flag
+$AddStartMenu = $false 
+
 $AllArgs = @(); if ($args) { $AllArgs += $args }; if ($param) { $AllArgs += $param.Split(" ") }
 for ($i = 0; $i -lt $AllArgs.Count; $i++) {
-    if ($AllArgs[$i] -eq "-Silent") { $Silent = $true }
+    if ($AllArgs[$i] -eq "-Silent") { 
+        $Silent = $true
+        # [FORCE] In Silent mode, force enable Start Menu by default (Optional: Remove this line if you want strict flag)
+        $AddStartMenu = $true 
+    }
+    if ($AllArgs[$i] -eq "-StartMenu") { $AddStartMenu = $true }
     if ($AllArgs[$i] -eq "-Browser" -and ($i + 1 -lt $AllArgs.Count)) { $Browser = $AllArgs[$i+1] }
 }
 
@@ -52,6 +61,9 @@ $Principal = [Security.Principal.WindowsPrincipal]$Identity
 if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Clear-Host; Write-Host "`n [SYSTEM] Requesting Admin Privileges..." -ForegroundColor Yellow
     $PassArgs = @(); if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
+    if ($AddStartMenu) { $PassArgs += "-StartMenu" }
+    if ($Silent) { $PassArgs += "-Silent" } # Ensure Silent passes through
+    
     try {
         if ($TargetFile -and (Test-Path $TargetFile)) {
             Start-Process "powershell" -ArgumentList (@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$TargetFile`"") + $PassArgs) -Verb RunAs
@@ -94,12 +106,15 @@ function DL ($U, $N) {
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
 $LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 if(!$Silent -and (Test-Path $ConsoleIcon)){ $h=[Win32.User32]::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10); if($h){ [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } }
-if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.75.6.6 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
+if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.75.6.8 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
 
 # ---------------------------------------------------------
 # [5] LOGIC
 # ---------------------------------------------------------
-$Desktop = [Environment]::GetFolderPath("Desktop"); $StartMenu = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
+$Desktop = [Environment]::GetFolderPath("Desktop")
+# [FIX] Use CommonStartMenu (All Users) so it appears for everyone
+$StartMenu = [Environment]::GetFolderPath("CommonStartMenu") + "\Programs"
+
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Global:Browsers = @(
     @{N="Google Chrome"; E="chrome.exe"; K="Chrome"; URL="https://www.google.com/chrome/"; P=@("$PF\Google\Chrome\Application\chrome.exe","$PF86\Google\Chrome\Application\chrome.exe")}
@@ -114,12 +129,10 @@ $Global:Browsers = @(
 function Play-Sound($Type) { try { switch ($Type) { "Click" { [System.Media.SystemSounds]::Beep.Play() } "Tick" { [System.Console]::Beep(2000, 20) } "Warn" { [System.Media.SystemSounds]::Hand.Play() } "Done" { [System.Media.SystemSounds]::Asterisk.Play() } } } catch {} }
 
 function Install-Browser {
-    # [UPDATE] Added $UseDesktop param
     param($NameKey, $Uninstall=$false, $UseStartMenu=$false, $UseDesktop=$true) 
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }; if (!$Obj) { return }
     $LnkName = "YouTube On TV - $($Obj.N).lnk"
     
-    # [UPDATE] Targets Logic
     $Targets = @()
     if ($UseDesktop) { $Targets += $Desktop }
     if ($UseStartMenu) { $Targets += $StartMenu }
@@ -141,6 +154,8 @@ function Install-Browser {
     $SmartUA = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36"
     foreach ($TargetDir in $Targets) {
         if (!$TargetDir) { continue }
+        if (-not (Test-Path $TargetDir)) { continue } # Safety check
+        
         $Sut = Join-Path $TargetDir $LnkName; $Ws = New-Object -Com WScript.Shell; $s = $Ws.CreateShortcut($Sut)
         $s.TargetPath = "cmd.exe"; $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"$SmartUA`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling"
         $s.WindowStyle = 3; $s.Description = "Enjoy Youtube On TV by IT Groceries"; if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
@@ -149,7 +164,20 @@ function Install-Browser {
     if(!$Silent){ Write-Host " [INSTALL] $($Obj.N)... DONE" -ForegroundColor Green }
 }
 
-if ($Silent -or ($Browser -ne "Ask")) { foreach($b in $Global:Browsers){ if($b.N -match $Browser -or $b.K -match $Browser){ $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}; if($FP){ $b.Path=$FP; Install-Browser $b.N } } }; exit }
+# [SILENT EXECUTION]
+if ($Silent -or ($Browser -ne "Ask")) { 
+    foreach($b in $Global:Browsers){ 
+        if($b.N -match $Browser -or $b.K -match $Browser){ 
+            $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}; 
+            if($FP){ 
+                $b.Path=$FP
+                # Forced: Desktop=True, StartMenu=True (in Silent)
+                Install-Browser $b.N $false $AddStartMenu $true 
+            } 
+        } 
+    }; 
+    exit 
+}
 
 # ---------------------------------------------------------
 # [6] XAML UI
