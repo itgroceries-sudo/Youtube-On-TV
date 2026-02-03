@@ -3,7 +3,7 @@
 > **Transform your computer into a `High-End` `Smart TV` with a single click.**
 > *Developed by `IT Groceries Shop`*
 
-![Version](https://img.shields.io/badge/version-v2.0_Build_72_(29--1--2026)-red?style=for-the-badge&logo=youtube)
+![Version](https://img.shields.io/badge/version-v2.0_Build_75.6.6_(4--2--2026)-red?style=for-the-badge&logo=youtube)
 ![Platform](https://img.shields.io/badge/platform-Windows_10%2F11-blue?style=for-the-badge&logo=windows)
 ![Tech](https://img.shields.io/badge/Powered_By-PowerShell_WPF-green?style=for-the-badge&logo=powershell)
 
@@ -14,6 +14,21 @@
 Transforms the standard `YouTube` web page into a clean, user-friendly `**TV Interface (Leanback)**`. Fully supports remote control and keyboard navigation, featuring an `**Always-On**` system for seamless, uninterrupted playback.
 
 ![YouTube TV Interface](https://github.com/user-attachments/assets/4cc8993f-feab-445b-ae97-59c3443fa17b)
+
+<img width="1161" height="879" alt="image" src="https://github.com/user-attachments/assets/6d345e37-040d-4501-a7cd-fedf62cfbf59" />
+
+---
+
+## 🚀 Release v2.0 Build 23.75.6.6 (Ultimate Edition)
+
+**What's New:**
+* 🎨 **New UI Design:** Modern Vector Icons, Dark Theme, and Card-style layout.
+* 🖱️ **Interactive UX:** Added sound effects (Click, Tick, Warning, Done).
+* ⚙️ **Full Control Options:** * Toggle Uninstall Mode (Trash Icon).
+    * Toggle Start Menu Shortcut (Windows Icon).
+    * Toggle Desktop Shortcut (Desktop Icon) - *New!*
+* 🖥️ **Console Upgrade:** Fixed "No-Close" console window for better stability.
+* 🐞 **Bug Fixes:** Resolved crash issues on admin request and added feedback for missing uninstall targets.
 
 ---
 
@@ -107,7 +122,7 @@ Upon launching the program:
 1. Toggle the `*Switch**` next to your desired `*Browser*`.
 2. Click the `Start` button to `Create Shortcut`.
 
-![Installer GUI](https://github.com/user-attachments/assets/450e7691-4548-46b7-8cc0-c3001e8d4f11)
+![Installer GUI](https://github.com/user-attachments/assets/93d30495-c3de-4eb2-9440-502a3d663bab)
 
 *(Fig 2: Select your `Browser` and click the button)*
 
@@ -115,7 +130,7 @@ Upon launching the program:
 The program will immediately notify you with *`"Created!"`* (takes less than 2 seconds).
 You will find a shortcut named *`Youtube On TV`* on your desktop, complete with a beautiful red icon.
 
-![Success Screen](https://github.com/user-attachments/assets/8d32015a-c794-467a-8f78-fca5dea9e49b)
+![Success Screen](https://github.com/user-attachments/assets/92ce71e9-aaca-40c7-b339-3d4356b00fed)
 
 *(Fig 3: `Shortcut` created successfully)*
 
