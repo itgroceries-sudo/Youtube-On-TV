@@ -163,3 +163,23 @@ irm bit.ly/YToTV | iex
 <div align="center">
 
 **Developed with ❤️ by `IT Groceries Shop`**
+
+</div>
+
+---
+
+## 🚀 Release v2.0 Build 23.75.6.6 (Ultimate Edition)
+
+**What's New:**
+* 🎨 **New UI Design:** Modern Vector Icons, Dark Theme, and Card-style layout.
+* 🖱️ **Interactive UX:** Added sound effects (Click, Tick, Warning, Done).
+* ⚙️ **Full Control Options:** * Toggle Uninstall Mode (Trash Icon).
+    * Toggle Start Menu Shortcut (Windows Icon).
+    * Toggle Desktop Shortcut (Desktop Icon) - *New!*
+* 🖥️ **Console Upgrade:** Fixed "No-Close" console window for better stability.
+* 🐞 **Bug Fixes:** Resolved crash issues on admin request and added feedback for missing uninstall targets.
+
+**Status:** Stable | Production Ready
+**Developed by:** IT Groceries Shop
+
+---
