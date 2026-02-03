@@ -3,16 +3,16 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v75.6.8 (SILENT FIX)
-#  Version: 2.0 Build 23.75.6.8
-#  File: 7568.ps1 | Branch: branch
-#  Status: Fixed Start Menu Path (All Users)
+#  YOUTUBE TV INSTALLER v75.6.9 (DOWNLOAD LINK FIX)
+#  Version: 2.0 Build 23.75.6.9
+#  File: 7569.ps1 | Branch: branch
+#  Status: Fixed "Click to Download" Error
 # =========================================================
 
 # ---------------------------------------------------------
 # [1] CONFIGURATION
 # ---------------------------------------------------------
-$AppVersion = "2.0 Build 23.75.6.8"
+$AppVersion = "2.0 Build 23.75.6.9"
 $BuildDate  = "04-02-2026"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
@@ -21,18 +21,10 @@ $SelfURL    = "$GitHubRaw/YToTV.ps1"
 
 $TargetFile = if ($ScriptPath) { $ScriptPath } elseif ($PSScriptRoot) { $PSCommandPath } else { $null }
 
-# [UPDATE] Silent Mode Defaults
-$Silent = $false; $Browser = "Ask"
-# Default to FALSE, enables only via GUI or Flag
-$AddStartMenu = $false 
-
+$Silent = $false; $Browser = "Ask"; $AddStartMenu = $false
 $AllArgs = @(); if ($args) { $AllArgs += $args }; if ($param) { $AllArgs += $param.Split(" ") }
 for ($i = 0; $i -lt $AllArgs.Count; $i++) {
-    if ($AllArgs[$i] -eq "-Silent") { 
-        $Silent = $true
-        # [FORCE] In Silent mode, force enable Start Menu by default (Optional: Remove this line if you want strict flag)
-        $AddStartMenu = $true 
-    }
+    if ($AllArgs[$i] -eq "-Silent") { $Silent = $true; $AddStartMenu = $true }
     if ($AllArgs[$i] -eq "-StartMenu") { $AddStartMenu = $true }
     if ($AllArgs[$i] -eq "-Browser" -and ($i + 1 -lt $AllArgs.Count)) { $Browser = $AllArgs[$i+1] }
 }
@@ -62,8 +54,7 @@ if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltI
     Clear-Host; Write-Host "`n [SYSTEM] Requesting Admin Privileges..." -ForegroundColor Yellow
     $PassArgs = @(); if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
     if ($AddStartMenu) { $PassArgs += "-StartMenu" }
-    if ($Silent) { $PassArgs += "-Silent" } # Ensure Silent passes through
-    
+    if ($Silent) { $PassArgs += "-Silent" }
     try {
         if ($TargetFile -and (Test-Path $TargetFile)) {
             Start-Process "powershell" -ArgumentList (@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$TargetFile`"") + $PassArgs) -Verb RunAs
@@ -106,15 +97,13 @@ function DL ($U, $N) {
 foreach($k in $Assets.Keys){ DL $Assets[$k] "$k.ico" | Out-Null }
 $LocalIcon = "$InstallDir\MenuIcon.ico"; $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 if(!$Silent -and (Test-Path $ConsoleIcon)){ $h=[Win32.User32]::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10); if($h){ [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } }
-if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.75.6.8 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
+if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.75.6.9 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
 
 # ---------------------------------------------------------
 # [5] LOGIC
 # ---------------------------------------------------------
 $Desktop = [Environment]::GetFolderPath("Desktop")
-# [FIX] Use CommonStartMenu (All Users) so it appears for everyone
 $StartMenu = [Environment]::GetFolderPath("CommonStartMenu") + "\Programs"
-
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Global:Browsers = @(
     @{N="Google Chrome"; E="chrome.exe"; K="Chrome"; URL="https://www.google.com/chrome/"; P=@("$PF\Google\Chrome\Application\chrome.exe","$PF86\Google\Chrome\Application\chrome.exe")}
@@ -132,20 +121,13 @@ function Install-Browser {
     param($NameKey, $Uninstall=$false, $UseStartMenu=$false, $UseDesktop=$true) 
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }; if (!$Obj) { return }
     $LnkName = "YouTube On TV - $($Obj.N).lnk"
-    
-    $Targets = @()
-    if ($UseDesktop) { $Targets += $Desktop }
-    if ($UseStartMenu) { $Targets += $StartMenu }
+    $Targets = @(); if ($UseDesktop) { $Targets += $Desktop }; if ($UseStartMenu) { $Targets += $StartMenu }
     
     if ($Uninstall) { 
         foreach ($p in $Targets) { 
             $FullPath = Join-Path $p $LnkName
-            if (Test-Path $FullPath) { 
-                Remove-Item $FullPath -Force
-                if(!$Silent){ Write-Host " [REMOVE] $FullPath" -ForegroundColor Red } 
-            } else {
-                if(!$Silent){ Write-Host " [SKIP]   Not found: $LnkName" -ForegroundColor DarkGray } 
-            }
+            if (Test-Path $FullPath) { Remove-Item $FullPath -Force; if(!$Silent){ Write-Host " [REMOVE] $FullPath" -ForegroundColor Red } } 
+            else { if(!$Silent){ Write-Host " [SKIP]   Not found: $LnkName" -ForegroundColor DarkGray } }
         } 
         return 
     }
@@ -153,9 +135,7 @@ function Install-Browser {
     if (!$Obj.Path) { return }
     $SmartUA = "Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36"
     foreach ($TargetDir in $Targets) {
-        if (!$TargetDir) { continue }
-        if (-not (Test-Path $TargetDir)) { continue } # Safety check
-        
+        if (!$TargetDir) { continue }; if (-not (Test-Path $TargetDir)) { continue }
         $Sut = Join-Path $TargetDir $LnkName; $Ws = New-Object -Com WScript.Shell; $s = $Ws.CreateShortcut($Sut)
         $s.TargetPath = "cmd.exe"; $s.Arguments = "/c taskkill /f /im $($Obj.E) /t >nul 2>&1 & start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=https://youtube.com/tv --user-agent=`"$SmartUA`" --start-fullscreen --disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling"
         $s.WindowStyle = 3; $s.Description = "Enjoy Youtube On TV by IT Groceries"; if(Test-Path $LocalIcon){ $s.IconLocation = $LocalIcon }
@@ -164,20 +144,7 @@ function Install-Browser {
     if(!$Silent){ Write-Host " [INSTALL] $($Obj.N)... DONE" -ForegroundColor Green }
 }
 
-# [SILENT EXECUTION]
-if ($Silent -or ($Browser -ne "Ask")) { 
-    foreach($b in $Global:Browsers){ 
-        if($b.N -match $Browser -or $b.K -match $Browser){ 
-            $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}; 
-            if($FP){ 
-                $b.Path=$FP
-                # Forced: Desktop=True, StartMenu=True (in Silent)
-                Install-Browser $b.N $false $AddStartMenu $true 
-            } 
-        } 
-    }; 
-    exit 
-}
+if ($Silent -or ($Browser -ne "Ask")) { foreach($b in $Global:Browsers){ if($b.N -match $Browser -or $b.K -match $Browser){ $FP=$null; foreach($p in $b.P){if(Test-Path $p){$FP=$p;break}}; if($FP){ $b.Path=$FP; Install-Browser $b.N $false $AddStartMenu $true } } }; exit }
 
 # ---------------------------------------------------------
 # [6] XAML UI
@@ -245,7 +212,7 @@ function Load-BrowserList {
         $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::Auto}))
         $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)}))
         $Row.ColumnDefinitions.Add((New-Object System.Windows.Controls.ColumnDefinition -Property @{Width=[System.Windows.GridLength]::Auto}))
-        $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 5; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"; $Bor.Tag = $b.N
+        $Bor = New-Object System.Windows.Controls.Border; $Bor.CornerRadius = 5; $Bor.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#252526"); $Bor.Padding = "10"; $Bor.Child = $Row; $Bor.Cursor = "Hand"; $Bor.Tag = $b.URL
         $Bor.Margin = "0,0,0,5"; $Bor.BorderThickness = "1"; $Bor.BorderBrush = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333")
         $Img = New-Object System.Windows.Controls.Image; $Img.Width = 32; $Img.Height = 32; if (Test-Path $IconPath) { $Img.Source = $IconPath }
         [System.Windows.Controls.Grid]::SetColumn($Img,0); $Row.Children.Add($Img)|Out-Null
