@@ -3,12 +3,12 @@
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v75.5.4 (UI ADJUSTMENT)
+#  YOUTUBE TV INSTALLER v75.5.4 (CONSOLE FIX)
 #  File: 7554.ps1 | Branch: branch
-#  Status: Buttons @ Bottom Left | External Console Preserved
+#  Status: Console Visible BUT Uncloseable (No 'X')
 # =========================================================
 
-# --- [1. INITIAL SETUP] ---
+# --- [1. SETUP & ARGS] ---
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
 $GitHubRaw = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
@@ -16,24 +16,39 @@ $SelfURL = "$GitHubRaw/YToTV.ps1"
 $AppVersion = "2.0 Build 23.75.5.4"
 $BuildDate  = "03-02-2026"
 
-# Check Mode
 $IsLocal = ($PSScriptRoot -or $ScriptPath)
 $TargetFile = if ($ScriptPath) { $ScriptPath } elseif ($PSScriptRoot) { $PSCommandPath } else { $null }
 
-# Handle Arguments
-$Silent = $false
+$AllArgs = @(); if ($args) { $AllArgs += $args }; if ($param) { $AllArgs += $param.Split(" ") }
+$Silent = $AllArgs -contains "-Silent"
 $Browser = "Ask"
-$AllArgs = @()
-if ($args) { $AllArgs += $args }
-if ($param) { $AllArgs += $param.Split(" ") }
 for ($i = 0; $i -lt $AllArgs.Count; $i++) {
-    if ($AllArgs[$i] -eq "-Silent") { $Silent = $true }
     if ($AllArgs[$i] -eq "-Browser" -and ($i + 1 -lt $AllArgs.Count)) { $Browser = $AllArgs[$i+1] }
 }
 
-# --- [2. SHOW CONSOLE] ---
-Add-Type -MemberDefinition '[DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow(); [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);' -Name "Win32" -Namespace Win32
-if (!$Silent) { [Win32.Win32]::ShowWindow([Win32.Win32]::GetConsoleWindow(), 5) | Out-Null }
+# --- [2. CONSOLE WINDOW MANAGER] ---
+# Define API to manipulate Console Window
+$User32 = Add-Type -MemberDefinition '[DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow(); [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow); [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags); [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad); [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam); [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr hWnd, int nIndex); [DllImport("user32.dll")] public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);' -Name "User32" -Namespace Win32 -PassThru
+
+$ConsoleHandle = [Win32.User32]::GetConsoleWindow()
+
+if ($Silent) {
+    # If Silent -> Hide Console Completely
+    [Win32.User32]::ShowWindow($ConsoleHandle, 0) | Out-Null
+} else {
+    # If Normal -> Show Console (5) BUT Remove Close Button
+    [Win32.User32]::ShowWindow($ConsoleHandle, 5) | Out-Null
+    
+    # [LOGIC] Remove WS_SYSMENU (Removes Min/Max/Close buttons)
+    $GWL_STYLE = -16
+    $WS_SYSMENU = 0x00080000
+    $CurrentStyle = [Win32.User32]::GetWindowLong($ConsoleHandle, $GWL_STYLE)
+    if ($CurrentStyle -ne 0) {
+        [Win32.User32]::SetWindowLong($ConsoleHandle, $GWL_STYLE, ($CurrentStyle -band (-not $WS_SYSMENU))) | Out-Null
+        # Force Redraw
+        [Win32.User32]::SetWindowPos($ConsoleHandle, [IntPtr]0, 0, 0, 0, 0, 0x0027) | Out-Null
+    }
+}
 
 # --- [3. ADMIN CHECK] ---
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -52,7 +67,6 @@ if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltI
     if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
 
     if (!$IsLocal) {
-        Write-Host " [INIT] Downloading script for elevation..." -ForegroundColor Yellow
         try { (New-Object System.Net.WebClient).DownloadFile($SelfURL, $TempScript) } catch { exit }
         Start-Process PowerShell -ArgumentList (@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "`"$TempScript`"") + $PassArgs) -Verb RunAs
     } 
@@ -68,7 +82,7 @@ if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltI
 # --- [4. MAIN PROGRAM] ---
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
-# Layout
+# Layout Calculation
 $Graphics = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero)
 $Scale = $Graphics.DpiX / 96.0; $Graphics.Dispose()
 $BaseW = 500; $BaseH = 820; $Gap = 0
@@ -76,13 +90,8 @@ $ConsoleW_Px = [int]($BaseW * $Scale); $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $StartX_Px = ($Scr.Width - ($ConsoleW_Px * 2)) / 2; $StartY_Px = ($Scr.Height - $ConsoleH_Px) / 2
 
-# Console Styling
-$ConsoleHandle = [Win32.Win32]::GetConsoleWindow()
-$User32 = Add-Type -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags); [DllImport("user32.dll")] public static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad); [DllImport("user32.dll")] public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, IntPtr lParam);' -Name "User32" -Namespace Win32 -PassThru
-
-if ($Silent) {
-    [Win32.Win32]::ShowWindow($ConsoleHandle, 0) | Out-Null
-} else {
+# Position Console
+if (!$Silent) {
     $host.UI.RawUI.WindowTitle = "Installer Log Console"
     $host.UI.RawUI.BackgroundColor = "Black"
     $host.UI.RawUI.ForegroundColor = "Gray"
@@ -187,6 +196,22 @@ Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocatio
             </ControlTemplate></Setter.Value></Setter>
         </Style>
         <Style x:Key="Btn" TargetType="Button"><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="22"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.FontWeight="Bold"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Opacity" Value="0.8"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style>
+        
+        <Style x:Key="VectorBtn" TargetType="Button">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Width" Value="45"/>
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="22">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Opacity" Value="0.8"/></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
     </Window.Resources>
     <Grid Margin="25">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="*"/><RowDefinition Height="120"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -205,12 +230,9 @@ Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocatio
             
             <StackPanel Orientation="Horizontal" Grid.Column="0">
                  <Button x:Name="BF" Width="45" Height="45" Background="#1877F2" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="Facebook" Cursor="Hand"><TextBlock Text="f" Foreground="White" FontSize="26" FontWeight="Bold" Margin="0,-4,0,0"/></Button>
-                 
                  <Button x:Name="BG" Width="45" Height="45" Background="#333333" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="GitHub" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></Viewbox></Button>
-                 
                  <Button x:Name="BRefresh" Width="45" Height="45" Background="#4CAF50" Style="{StaticResource Btn}" Margin="0,0,8,0" ToolTip="Re-Scan" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></Viewbox></Button>
-                 
-                 <Button x:Name="BAbt" Width="45" Height="45" Background="#607D8B" Style="{StaticResource Btn}" ToolTip="About" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></Viewbox></Button>
+                 <Button x:Name="BAbt" Style="{StaticResource VectorBtn}" ToolTip="About" Cursor="Hand"><Viewbox Width="24" Height="24"><Path Fill="White" Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></Viewbox></Button>
             </StackPanel>
             
             <StackPanel Orientation="Horizontal" Grid.Column="2" HorizontalAlignment="Right">
