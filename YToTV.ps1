@@ -52,6 +52,10 @@ $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
 if (-not $Silent -and -not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Clear-Host; Write-Host "`n [SYSTEM] Requesting Admin Privileges..." -ForegroundColor Yellow
+    
+    # [FIX] Added Wait for Enter
+    Write-Host " Press [ENTER] to continue..." -ForegroundColor Cyan; Read-Host
+    
     $PassArgs = @(); if ($Browser -ne "Ask") { $PassArgs += "-Browser"; $PassArgs += $Browser }
     if ($AddStartMenu) { $PassArgs += "-StartMenu" }
     if ($Silent) { $PassArgs += "-Silent" }
