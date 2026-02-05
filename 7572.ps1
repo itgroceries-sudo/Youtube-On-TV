@@ -36,7 +36,7 @@ $User32 = Add-Type -MemberDefinition '[DllImport("kernel32.dll")] public static 
 $ConsoleHandle = [Win32.User32]::GetConsoleWindow()
 
 # ---------------------------------------------------------
-# [3] IT GROCERIES LAUNCHER (The Waiter)
+# [3] IT GROCERIES LAUNCHER (SECURITY CHECK)
 # ---------------------------------------------------------
 $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $Principal = [Security.Principal.WindowsPrincipal]$Identity
@@ -49,11 +49,14 @@ if (-not $Silent -and -not $IsAdmin) {
     $host.UI.RawUI.ForegroundColor = "White"
     Clear-Host
     
+    # [UPDATE] Relevant Header Title
     Write-Host "`n================================================================================" -ForegroundColor DarkGray
-    Write-Host "              AiO ( Freeware Silent Installer ) [ Cloud UI ]                    " -ForegroundColor Cyan -BackgroundColor DarkBlue
+    Write-Host "                  YouTube TV Installer [ Cloud Edition ]                        " -ForegroundColor Cyan -BackgroundColor DarkBlue
     Write-Host "                       Powered by IT Groceries Shop                             " -ForegroundColor DarkCyan -BackgroundColor DarkBlue
     Write-Host "================================================================================" -ForegroundColor DarkGray
     Write-Host ""
+    
+    # [KEEP] Preserved Text
     Write-Host "        This software is provided as FREEWARE for educational usage." -ForegroundColor Yellow
     Write-Host "             Crafted with dedication to streamline your workflow." -ForegroundColor Yellow
     Write-Host ""
@@ -64,9 +67,11 @@ if (-not $Silent -and -not $IsAdmin) {
     Write-Host "       Your support drives our future updates. Thank you!" -ForegroundColor Magenta
     Write-Host ""
     Write-Host ""
-    Write-Host "                  [ SECURITY CHECK ] Press Enter: " -NoNewline -ForegroundColor White
     
-    # [CRITICAL] Wait for user input before proceeding to Admin Request
+    # [UPDATE] Clear Instruction for Admin Rights
+    Write-Host "      [ PERMISSION CHECK ] Press Enter, then click 'Yes' to continue: " -NoNewline -ForegroundColor White
+    
+    # Wait for user input
     $null = Read-Host
 }
 
