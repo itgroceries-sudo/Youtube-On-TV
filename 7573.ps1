@@ -359,14 +359,63 @@ function Load-BrowserList {
     $RefBor.Add_MouseLeftButtonUp({ Play-Sound "Click"; Load-BrowserList })
 }
 
+# [NEW] Helper Function: Check if Button should be Active
+function Update-StartButton {
+    $HasTarget = ($BDesk.Tag -eq "On") -or ($BWin.Tag -eq "On")
+    if ($HasTarget) {
+        $BA.IsEnabled = $true
+        $BA.Opacity = 1.0
+        $BA.Cursor = "Hand"
+    } else {
+        $BA.IsEnabled = $false
+        $BA.Opacity = 0.5  # Make it look disabled (Grayed out)
+        $BA.Cursor = "No"
+    }
+}
+
+# --- Initial Run ---
 Load-BrowserList
+Update-StartButton # Check initial state
+
+# --- Event Handlers ---
 $BF.Add_Click({ Start-Process "https://www.facebook.com/Adm1n1straTOE"; Play-Sound "Click" })
 $BG.Add_Click({ Start-Process "https://github.com/itgroceries-sudo/Youtube-On-TV/tree/main"; Play-Sound "Click" }) 
 $BAbt.Add_Click({ Play-Sound "Click"; [System.Windows.MessageBox]::Show("YouTube TV Installer`nVersion: $AppVersion`n`nDeveloped by IT Groceries Shop", "About", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null })
 
-$BDesk.Add_Click({ if ($BDesk.Tag -eq "Off") { $BDesk.Tag = "On"; $BDesk.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0078D7"); Play-Sound "Click" } else { $BDesk.Tag = "Off"; $BDesk.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333"); Play-Sound "Click" } })
-$BWin.Add_Click({ if ($BWin.Tag -eq "Off") { $BWin.Tag = "On"; $BWin.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0078D7"); Play-Sound "Click" } else { $BWin.Tag = "Off"; $BWin.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333"); Play-Sound "Click" } })
-$BTrash.Add_Click({ if ($BTrash.Tag -eq "Off") { $BTrash.Tag = "On"; $BTrash.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#D32F2F"); $BA.Content = "Uninstall Selected"; $BA.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#D32F2F"); Play-Sound "Warn" } else { $BTrash.Tag = "Off"; $BTrash.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333"); $BA.Content = "Start Install"; $BA.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2E7D32"); Play-Sound "Click" } })
+# [UPDATE] BDesk with State Check
+$BDesk.Add_Click({ 
+    if ($BDesk.Tag -eq "Off") { 
+        $BDesk.Tag = "On"; $BDesk.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0078D7")
+    } else { 
+        $BDesk.Tag = "Off"; $BDesk.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333")
+    }
+    Play-Sound "Click"; Update-StartButton 
+})
+
+# [UPDATE] BWin with State Check
+$BWin.Add_Click({ 
+    if ($BWin.Tag -eq "Off") { 
+        $BWin.Tag = "On"; $BWin.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#0078D7")
+    } else { 
+        $BWin.Tag = "Off"; $BWin.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333")
+    }
+    Play-Sound "Click"; Update-StartButton 
+})
+
+# [UPDATE] BTrash (Just Text Update, State is controlled by Targets)
+$BTrash.Add_Click({ 
+    if ($BTrash.Tag -eq "Off") { 
+        $BTrash.Tag = "On"; $BTrash.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#D32F2F")
+        $BA.Content = "Uninstall Selected"; $BA.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#D32F2F")
+        Play-Sound "Warn"
+    } else { 
+        $BTrash.Tag = "Off"; $BTrash.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#333333")
+        $BA.Content = "Start Install"; $BA.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#2E7D32")
+        Play-Sound "Click"
+    }
+    Update-StartButton # Check again just in case
+})
+
 $BC.Add_Click({ Play-Sound "Click"; if(!$Silent){ Write-Host "`n [EXIT] Clean & Bye !!" -ForegroundColor Cyan }; [System.Windows.Forms.Application]::DoEvents(); Start-Sleep 1; if ($PSCommandPath -eq $TempScript) { Start-Process "cmd.exe" -ArgumentList "/c timeout /t 2 >nul & del `"$TempScript`"" -WindowStyle Hidden }; $Window.Close(); [Environment]::Exit(0) })
 
 $BA.Add_Click({ 
@@ -379,5 +428,6 @@ $BA.Add_Click({
     
     foreach ($i in $Sel) { Install-Browser $i.Child.Children[2].Tag $IsUninstall $UseStartMenu $UseDesktop $IsPCMode }
     $BA.Content = "Finished"; Play-Sound "Done"; Start-Sleep 2; $BA.IsEnabled = $true; if ($IsUninstall) { $BA.Content = "Uninstall Selected" } else { $BA.Content = "Start Install" } 
+    Update-StartButton # Ensure state is correct after process
 })
 $Window.ShowDialog() | Out-Null
