@@ -128,7 +128,7 @@ irm bit.ly/YToTV | iex
 1.  เลือก `*Browser*` ที่คุณต้องการใช้จากเมนู `*Switch**`
 2.  กดปุ่ม `Start` เพื่อ `Create Shortcut`
 
-![Installer GUI](https://github.com/user-attachments/assets/6d345e37-040d-4501-a7cd-fedf62cfbf59)
+![Installer GUI](https://github.com/user-attachments/assets/a0a1154f-e97a-4234-9517-5939ca46c35a)
 
 *(รูปที่ 2: เลือก `Browser` แล้วกดปุ่มได้เลย)*
 
