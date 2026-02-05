@@ -133,10 +133,18 @@ if(!$Silent -and (Test-Path $ConsoleIcon)){ $h=[Win32.User32]::LoadImage([IntPtr
 if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.75.7.3 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
 
 # ---------------------------------------------------------
-# [6] LOGIC
+# [6] LOGIC (FIXED SILENT START MENU)
 # ---------------------------------------------------------
 $Desktop = [Environment]::GetFolderPath("Desktop")
-$StartMenu = [Environment]::GetFolderPath("CommonStartMenu") + "\Programs"
+
+# [FIX] Smart Start Menu Path: Use "All Users" if Admin, else use "Current User"
+$IsAdminState = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if ($IsAdminState) {
+    $StartMenu = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs"
+} else {
+    $StartMenu = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs"
+}
+
 $PF = $env:ProgramFiles; $PF86 = ${env:ProgramFiles(x86)}; $L = $env:LOCALAPPDATA
 $Global:Browsers = @(
     @{N="Google Chrome"; E="chrome.exe"; K="Chrome"; URL="https://www.google.com/chrome/"; P=@("$PF\Google\Chrome\Application\chrome.exe","$PF86\Google\Chrome\Application\chrome.exe")}
@@ -154,19 +162,19 @@ function Install-Browser {
     param($NameKey, $Uninstall=$false, $UseStartMenu=$false, $UseDesktop=$true, $IsPCMode=$false) 
     $Obj = $Global:Browsers | Where-Object { $_.N -eq $NameKey }; if (!$Obj) { return }
     
-    # [FIX 2] Dynamic Naming & Description
+    # Dynamic Naming & Logic
     if ($IsPCMode) {
         $LnkName = "YouTube On PC - $($Obj.N).lnk"
         $Desc    = "Enjoy Youtube On PC by IT Groceries"
         $AppUrl  = "https://www.youtube.com"
         $UAStr   = ""
-        $KillCmd = "" # [FIX 3] No Kill in PC Mode
+        $KillCmd = "" 
     } else {
         $LnkName = "YouTube On TV - $($Obj.N).lnk"
         $Desc    = "Enjoy Youtube On TV by IT Groceries"
         $AppUrl  = "https://youtube.com/tv"
         $UAStr   = "--user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36`""
-        $KillCmd = "taskkill /f /im $($Obj.E) /t >nul 2>&1 & " # Kill in TV Mode
+        $KillCmd = "taskkill /f /im $($Obj.E) /t >nul 2>&1 & " 
     }
     
     $Targets = @(); if ($UseDesktop) { $Targets += $Desktop }; if ($UseStartMenu) { $Targets += $StartMenu }
@@ -182,7 +190,6 @@ function Install-Browser {
 
     if (!$Obj.Path) { return }
     
-    # Command Construction
     $ArgList = "/c $KillCmd start `"`" `"$($Obj.Path)`" --profile-directory=Default --app=$AppUrl $UAStr --start-fullscreen --disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling"
 
     foreach ($TargetDir in $Targets) {
