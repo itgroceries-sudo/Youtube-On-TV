@@ -21,7 +21,7 @@ exit /b
 $AppVersion = "2.0 Build 23.75.9.9"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
-$GitHubRaw  = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/branch"
+$GitHubRaw  = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
 $SelfURL    = "$GitHubRaw/YToTV.ps1"
 $TargetFile = if ($ScriptPath) { $ScriptPath } elseif ($PSScriptRoot) { $PSCommandPath } else { $null }
 
