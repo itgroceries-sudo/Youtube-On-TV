@@ -6,10 +6,10 @@ exit /b
 #>
 
 # =========================================================
-#  YOUTUBE TV INSTALLER v75.9.9 (UNINSTALL FIX)
-#  Version: 2.0 Build 23.75.9.9
-#  File: 7599.ps1 | Branch: branch
-#  Status: Reverted to 75.9.7 UI | Fixed Uninstall Logic
+#  YOUTUBE TV INSTALLER v76.0.0 (LAYOUT MASTER)
+#  Version: 2.0 Build 23.76.0.0
+#  File: 7600.ps1 | Branch: main
+#  Status: Fixed Console Shrinking | Extended Menu Height
 # =========================================================
 
 # [0] FORCE TLS 1.2
@@ -18,7 +18,7 @@ exit /b
 # ---------------------------------------------------------
 # [1] CONFIG & LANGUAGE
 # ---------------------------------------------------------
-$AppVersion = "2.0 Build 23.75.9.9"
+$AppVersion = "2.0 Build 23.76.0.0"
 $InstallDir = "$env:LOCALAPPDATA\ITG_YToTV"
 $TempScript = "$env:TEMP\YToTV.ps1"
 $GitHubRaw  = "https://raw.githubusercontent.com/itgroceries-sudo/Youtube-On-TV/main"
@@ -27,8 +27,8 @@ $TargetFile = if ($ScriptPath) { $ScriptPath } elseif ($PSScriptRoot) { $PSComma
 
 # Dictionary
 $LangDict = @{
-    "EN" = @{ "Title"="YouTube TV Installer"; "Dev"="Developed by IT Groceries Shop"; "Refresh"="Installed a new browser? Click Refresh"; "Rec"="(Recommended)"; "ClickDL"="(Click to Download)"; "Facebook"="Facebook"; "GitHub"="GitHub"; "About"="About"; "Desktop"="Desktop"; "StartMenu"="StartMenu"; "Uninstall"="Uninstall"; "Start"="Start Install"; "Exit"="EXIT"; "Processing"="Processing..."; "Finished"="Finished"; "UninsSel"="Uninstall Selected"; "ModeTV"="YouTube TV"; "ModePC"="YouTube PC"; "LangLabel"="Language" }
-    "TH" = @{ "Title"="ตัวติดตั้ง YouTube TV"; "Dev"="พัฒนาโดย IT Groceries Shop"; "Refresh"="ติดตั้งเบราว์เซอร์ใหม่? คลิกเพื่อรีเฟรช"; "Rec"="(แนะนำ)"; "ClickDL"="(คลิกเพื่อดาวน์โหลด)"; "Facebook"="Facebook"; "GitHub"="GitHub"; "About"="เกี่ยวกับ"; "Desktop"="หน้าจอหลัก"; "StartMenu"="เมนูเริ่ม"; "Uninstall"="ถอนการติดตั้ง"; "Start"="เริ่มติดตั้ง"; "Exit"="ออก"; "Processing"="กำลังทำงาน..."; "Finished"="เสร็จสิ้น"; "UninsSel"="ยืนยันการลบ"; "ModeTV"="โหมดทีวี (TV)"; "ModePC"="โหมดคอม (PC)"; "LangLabel"="ภาษา" }
+    "EN" = @{ "Title"="YouTube TV Installer"; "Dev"="Developed by IT Groceries Shop™ ♥ ♥ ♥"; "Refresh"="Installed a new browser? Click Refresh"; "Rec"="(Recommended)"; "ClickDL"="(Click to Download)"; "Facebook"="Facebook"; "GitHub"="GitHub"; "About"="About"; "Desktop"="Desktop"; "StartMenu"="StartMenu"; "Uninstall"="Uninstall"; "Start"="Start Install"; "Exit"="EXIT"; "Processing"="Processing..."; "Finished"="Finished"; "UninsSel"="Uninstall Selected"; "ModeTV"="YouTube TV"; "ModePC"="YouTube PC"; "LangLabel"="Language" }
+    "TH" = @{ "Title"="ตัวติดตั้ง YouTube TV"; "Dev"="พัฒนาโดย IT Groceries™ Shop ♥ ♥ ♥"; "Refresh"="ติดตั้งเบราว์เซอร์ใหม่? คลิกเพื่อรีเฟรช"; "Rec"="(แนะนำ)"; "ClickDL"="(คลิกเพื่อดาวน์โหลด)"; "Facebook"="Facebook"; "GitHub"="GitHub"; "About"="เกี่ยวกับ"; "Desktop"="หน้าจอหลัก"; "StartMenu"="เมนูเริ่ม"; "Uninstall"="ถอนการติดตั้ง"; "Start"="เริ่มติดตั้ง"; "Exit"="ออก"; "Processing"="กำลังทำงาน..."; "Finished"="เสร็จสิ้น"; "UninsSel"="ยืนยันการลบ"; "ModeTV"="โหมดทีวี (TV)"; "ModePC"="โหมดคอม (PC)"; "LangLabel"="ภาษา" }
 }
 
 # Auto-Detect Region
@@ -61,7 +61,7 @@ $IsAdmin = $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administ
 
 if (-not $Silent -and -not $IsAdmin) {
     if ($ConsoleHandle) { [Win32.User32]::ShowWindow($ConsoleHandle, 5) | Out-Null }
-    try { $host.UI.RawUI.WindowSize = New-Object System.Management.Automation.Host.Size(85, 20) } catch {} # Fitted Size
+    try { $host.UI.RawUI.WindowSize = New-Object System.Management.Automation.Host.Size(90, 20) } catch {} 
 
     $host.UI.RawUI.WindowTitle = "IT Groceries Launcher"
     $host.UI.RawUI.BackgroundColor = "DarkBlue"; $host.UI.RawUI.ForegroundColor = "White"; Clear-Host
@@ -109,12 +109,13 @@ if (-not $Silent -and -not $IsAdmin) {
 }
 
 # ---------------------------------------------------------
-# [5] GUI PREP
+# [5] GUI PREP & SIDE-BY-SIDE (FIXED)
 # ---------------------------------------------------------
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 $Graphics = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero); $Scale = $Graphics.DpiX / 96.0; $Graphics.Dispose()
 
-$BaseW = 600; $BaseH = 820 
+# [FIX] INCREASED HEIGHT & BUFFER
+$BaseW = 600; $BaseH = 900 
 $ConsoleW_Px = [int]($BaseW * $Scale); $ConsoleH_Px = [int]($BaseH * $Scale)
 $Scr = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 
@@ -122,6 +123,9 @@ $TotalWidth_Px = $ConsoleW_Px * 2; $StartX_Px = ($Scr.Width - $TotalWidth_Px) / 
 $WindowX_WPF = ($StartX_Px + $ConsoleW_Px) / $Scale; $WindowY_WPF = $StartY_Px / $Scale
 
 if ($Silent) { if ($ConsoleHandle) { [Win32.User32]::ShowWindow($ConsoleHandle, 0) | Out-Null } } else {
+    # [FIX] EXPAND BUFFER TO PREVENT SHRINKING
+    try { $host.UI.RawUI.BufferSize = New-Object System.Management.Automation.Host.Size(120, 9999) } catch {}
+    
     if ($ConsoleHandle) { 
         [Win32.User32]::ShowWindow($ConsoleHandle, 5) | Out-Null
         [Win32.User32]::SetWindowPos($ConsoleHandle, [IntPtr]0, [int]$StartX_Px, [int]$StartY_Px, [int]$ConsoleW_Px, [int]$ConsoleH_Px, 0x0040) | Out-Null
@@ -130,6 +134,7 @@ if ($Silent) { if ($ConsoleHandle) { [Win32.User32]::ShowWindow($ConsoleHandle, 
 
 if (-not (Test-Path $InstallDir)) { New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null }
 
+# Icon & Background
 $ConsoleIcon = "$InstallDir\ConsoleIcon.ico"
 if (!$Silent) {
     $host.UI.RawUI.WindowTitle = "Installer Log Console"; 
@@ -145,10 +150,7 @@ $Assets = @{ "MenuIcon"="$GitHubRaw/YouTube.ico"; "ConsoleIcon"="https://itgroce
 foreach($k in $Assets.Keys){ 
     $D="$InstallDir\$k.ico"
     if(!(Test-Path $D) -or (Get-Item $D).Length -lt 100){ 
-        try{ 
-            (New-Object Net.WebClient).DownloadFile($Assets[$k],$D)
-            if(!$Silent){ Write-Host " [DOWNLOAD] OK: $k" -ForegroundColor Green } 
-        }catch{ if(!$Silent){ Write-Host " [ERROR]    Fail: $k" -ForegroundColor Red } } 
+        try{ (New-Object Net.WebClient).DownloadFile($Assets[$k],$D); if(!$Silent){ Write-Host " [DOWNLOAD] OK: $k" -ForegroundColor Green } }catch{ if(!$Silent){ Write-Host " [ERROR]    Fail: $k" -ForegroundColor Red } } 
     } else { if(!$Silent){ Write-Host " [CACHE]    OK: $k" -ForegroundColor DarkGray } } 
 }
 
@@ -156,10 +158,10 @@ foreach($k in $Assets.Keys){
 if(!$Silent -and (Test-Path $ConsoleIcon) -and $ConsoleHandle){ $h=[Win32.User32]::LoadImage([IntPtr]::Zero, $ConsoleIcon, 1, 0, 0, 0x10); if($h){ [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]0,$h)|Out-Null; [Win32.User32]::SendMessage($ConsoleHandle,0x80,[IntPtr]1,$h)|Out-Null } }
 $LocalIcon = "$InstallDir\MenuIcon.ico"
 
-if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.75.9.9 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
+if(!$Silent){ Write-Host "`n==========================================" -ForegroundColor Green; Write-Host "   (V.2 Build 23.76.0.0 : $BuildDate)     " -ForegroundColor Green; Write-Host "==========================================" -ForegroundColor Green; Write-Host " [INIT] Scanning installed browsers..." -ForegroundColor Green }
 
 # ---------------------------------------------------------
-# [6] LOGIC (FIXED UNINSTALL)
+# [6] LOGIC
 # ---------------------------------------------------------
 $Desktop = [Environment]::GetFolderPath("Desktop")
 $IsAdminState = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -190,7 +192,6 @@ function Install-Browser {
     
     $Targets = @(); if ($UseDesktop) { $Targets += $Desktop }; if ($UseStartMenu) { $Targets += $StartMenu }
     
-    # [FIX] UNINSTALL LOGIC - Checks BOTH Names (TV & PC)
     if ($Uninstall) { 
         $PossibleNames = @("YouTube On TV - $($Obj.N).lnk", "YouTube On PC - $($Obj.N).lnk")
         foreach ($p in $Targets) { 
@@ -207,7 +208,6 @@ function Install-Browser {
 
     if (!$Obj.ActualPath) { return }
     
-    # Install Logic
     if ($IsPCMode) { $LnkName="YouTube On PC - $($Obj.N).lnk"; $Desc="Enjoy Youtube On PC by IT Groceries"; $AppUrl="https://www.youtube.com"; $UAStr=""; $KillCmd="" } 
     else { $LnkName="YouTube On TV - $($Obj.N).lnk"; $Desc="Enjoy Youtube On TV by IT Groceries"; $AppUrl="https://youtube.com/tv"; $UAStr="--user-agent=`"Mozilla/5.0 (SMART-TV; LINUX; Tizen 5.5) AppleWebKit/537.36 (KHTML, like Gecko) 69.0.3497.106/5.5 TV Safari/537.36`""; $KillCmd="taskkill /f /im $($Obj.E) /t >nul 2>&1 & " }
 
