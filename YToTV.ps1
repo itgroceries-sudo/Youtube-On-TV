@@ -174,7 +174,7 @@ $Global:Browsers = @(
     @{N="Brave Browser"; E="brave.exe"; K="Brave"; URL="https://brave.com/download/"; P=@("$PF\BraveSoftware\Brave-Browser\Application\brave.exe","$PF86\BraveSoftware\Brave-Browser\Application\brave.exe"); IsFound=$false; ActualPath=$null}
     @{N="Vivaldi"; E="vivaldi.exe"; K="Vivaldi"; URL="https://vivaldi.com/download/"; P=@("$L\Vivaldi\Application\vivaldi.exe","$PF\Vivaldi\Application\vivaldi.exe"); IsFound=$false; ActualPath=$null}
     @{N="Yandex Browser"; E="browser.exe"; K="Yandex"; URL="https://browser.yandex.com/"; P=@("$L\Yandex\YandexBrowser\Application\browser.exe"); IsFound=$false; ActualPath=$null}
-    @{N="Chromium"; E="chrome.exe"; K="Chromium"; URL="https://download-chromium.appspot.com/"; P=@("$L\Chromium\Application\chrome.exe","$PF\Chromium\Application\chrome.exe"); IsFound=$false; ActualPath=$null}
+    @{N="Chromium"; E="chrome.exe"; K="Chromium"; URL="https://chromium.woolyss.com/download/"; P=@("$L\Chromium\Application\chrome.exe","$PF\Chromium\Application\chrome.exe"); IsFound=$false; ActualPath=$null}
     @{N="Thorium"; E="thorium.exe"; K="Thorium"; URL="https://thorium.rocks/"; P=@("$L\Thorium\Application\thorium.exe","$PF\Thorium\Application\thorium.exe"); IsFound=$false; ActualPath=$null}
 )
 
