@@ -227,7 +227,7 @@ if ($Silent -or ($Browser -ne "Ask")) { Scan-Browsers; foreach($b in $Global:Bro
 try {
     if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
 
-    $MenuH = $BaseH - 10
+    $MenuH = $BaseH - 8
 
     [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
