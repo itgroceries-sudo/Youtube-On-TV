@@ -227,6 +227,8 @@ if ($Silent -or ($Browser -ne "Ask")) { Scan-Browsers; foreach($b in $Global:Bro
 try {
     if(!$Silent){ Write-Host "`n [INIT] Launching GUI..." -ForegroundColor Yellow }
 
+    $MenuH = $BaseH - 10
+
     [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 Title="YouTube TV Installer" Height="$BaseH" Width="$BaseW" WindowStartupLocation="Manual" ResizeMode="NoResize" Background="#181818" WindowStyle="None" BorderBrush="#2196F3" BorderThickness="4">
